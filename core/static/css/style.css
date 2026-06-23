@@ -495,3 +495,35 @@
 }
 /*** Footer End ***/
 
+@media (max-width: 576px) {
+    /* Adjust padding of card body on mobile to give more horizontal space */
+    .fruite-item .p-4, .vesitable-item .p-4 {
+        padding: 1.25rem 1rem !important;
+    }
+    
+    /* Make the Add to cart button and quantity selector fit perfectly */
+    .fruite-item .quantity, .vesitable-item .quantity {
+        width: 110px !important;
+    }
+    
+    .fruite-item .quantity input, .vesitable-item .quantity input {
+        min-width: 40px !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .fruite-item .quantity .btn, .vesitable-item .quantity .btn {
+        width: 25px !important;
+        height: 25px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .fruite-item button[type="submit"], .vesitable-item button[type="submit"] {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        font-size: 0.85rem !important;
+    }
+}
+

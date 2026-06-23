@@ -56,6 +56,76 @@
       .form-wrapper.is-active .form [type="submit"] { opacity: 1; transform: translateX(0); transition: all 0.4s ease-in; }
       .btn-login { color: #fbfdff; background: #a7e245; transform: translateX(-30%); }
       .btn-signup { color: #a7e245; background: #fbfdff; box-shadow: inset 0 0 0 2px #a7e245; transform: translateX(30%); }
+      
+      @media (max-width: 600px) {
+        .forms-section {
+          padding-top: 80px;
+          padding-bottom: 40px;
+        }
+        .section-title {
+          font-size: 26px;
+        }
+        .forms {
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+          max-width: 480px;
+          position: relative;
+          margin-top: 20px;
+          padding: 0 15px;
+        }
+        .form-wrapper {
+          width: 100%;
+          animation: none !important;
+          z-index: auto !important;
+          position: static !important;
+        }
+        .switcher {
+          transform: none !important;
+          font-size: 15px;
+          width: 100%;
+          text-align: center;
+          padding: 10px 0;
+          z-index: 10 !important;
+        }
+        .switcher-login, .switcher-signup {
+          position: absolute;
+          top: 0;
+          width: calc(50% - 15px);
+        }
+        .switcher-login {
+          left: 15px;
+        }
+        .switcher-signup {
+          right: 15px;
+        }
+        .form {
+          min-width: 0 !important;
+          width: 100% !important;
+          margin: 60px auto 0 auto !important;
+          transform: none !important;
+          animation: none !important;
+        }
+        .form-wrapper:not(.is-active) .form {
+          display: none !important;
+        }
+        .form-wrapper.is-active .form {
+          display: block !important;
+          opacity: 1 !important;
+        }
+        .form-wrapper.is-active fieldset {
+          opacity: 1 !important;
+          transform: none !important;
+        }
+        .form-login fieldset, .form-signup fieldset {
+          transform: none !important;
+        }
+        .form [type="submit"] {
+          opacity: 1 !important;
+          transform: none !important;
+          margin-top: 20px !important;
+        }
+      }
     </style>
 </head>
 <body>
