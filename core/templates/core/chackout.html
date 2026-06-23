@@ -1,0 +1,149 @@
+{% extends "core/index.html" %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+
+<!-- Single Page Header start -->
+<div class="container-fluid page-header py-5 mt-5">
+    <h1 class="text-center text-white display-6">Checkout</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+        <li class="breadcrumb-item active text-white">Checkout</li>
+    </ol>
+</div>
+<!-- Single Page Header End -->
+
+<!-- Checkout Page Start -->
+<div class="container-fluid py-5 mt-5 pt-5">
+    <div class="container py-5">
+        <h1 class="mb-4">Detail Pengiriman & Pembayaran</h1>
+        <form action="{% url 'checkout' %}" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-5">
+                <div class="col-md-12 col-lg-6 col-xl-7">
+                    <div class="form-item">
+                        <label class="form-label my-3">Alamat Pengiriman Lengkap<sup>*</sup></label>
+                        <textarea name="alamat" class="form-control" rows="5" placeholder="Masukkan alamat lengkap pengiriman..." required>{{ pelanggan.alamat }}</textarea>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="form-label d-block mb-2">Metode Pembayaran<sup>*</sup></label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="metode_bayar" id="transfer_bank" value="Transfer Bank BRI" checked>
+                            <label class="form-check-label" for="transfer_bank">Transfer Bank BRI</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="metode_bayar" id="cod" value="COD">
+                            <label class="form-check-label" for="cod">COD (Bayar di Tempat)</label>
+                        </div>
+                    </div>
+                    
+                    <div id="payment-info-box" class="mt-5 p-4 border rounded bg-light">
+                        <h4 class="mb-3 text-primary">Informasi Pembayaran</h4>
+                        <p class="mb-2 text-dark">Silakan transfer total belanja Anda ke rekening berikut:</p>
+                        <div class="bg-white p-3 border rounded mb-3">
+                            <h5 class="mb-1 text-secondary">Bank BRI</h5>
+                            <h3 class="mb-1">0011-01-234567-50-1</h3>
+                            <p class="mb-0">a/n <strong>Gerai Buah ARB</strong></p>
+                        </div>
+                        <div class="form-item">
+                            <label class="form-label mb-2">Upload Bukti Transfer<sup>*</sup></label>
+                            <input type="file" name="buktiBayar" id="buktiBayarInput" class="form-control" required>
+                            <small class="text-muted mt-1 d-block">Format file: JPG, PNG, atau PDF (Maks. 2MB)</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-12 col-lg-6 col-xl-5">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Produk</th>
+                                    <th scope="col">Nama</th>
+                                    <th scope="col">Harga</th>
+                                    <th scope="col">Qty</th>
+                                    <th scope="col">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if cart_items %}
+                                {% for item in cart_items %}
+                                <tr>
+                                    <th scope="row">
+                                        <div class="d-flex align-items-center mt-2">
+                                            <img src="{{ item.buah.fotoBuah.url }}" class="img-fluid rounded-circle" style="width: 60px; height: 60px;" alt="{{ item.buah.namaBuah }}">
+                                        </div>
+                                    </th>
+                                    <td class="py-4">{{ item.buah.namaBuah }}</td>
+                                    <td class="py-4">Rp. {{ item.harga_setelah_diskon|intcomma }}</td>
+                                    <td class="py-4">{{ item.qty }}</td>
+                                    <td class="py-4">Rp. {{ item.subtotal|intcomma }}</td>
+                                </tr>
+                                {% endfor %}
+                                <tr>
+                                    <th scope="row"></th>
+                                    <td class="py-4"></td>
+                                    <td class="py-4"></td>
+                                    <td class="py-4">
+                                        <p class="mb-0 text-dark py-3">Total Belanja</p>
+                                    </td>
+                                    <td class="py-4">
+                                        <div class="py-3 border-bottom border-top">
+                                            <p class="mb-0 text-dark fw-bold">Rp. {{ cart_total|intcomma }}</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">Keranjang kosong.</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="row g-4 text-center align-items-center justify-content-center pt-4">
+                        <button type="submit" class="btn border-secondary py-3 px-4 text-uppercase w-100 text-primary fw-bold">Konfirmasi Pesanan</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Checkout Page End -->
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentInfoBox = document.getElementById('payment-info-box');
+    const buktiBayarInput = document.getElementById('buktiBayarInput');
+    const radioButtons = document.getElementsByName('metode_bayar');
+
+    function togglePaymentInfo() {
+        let selectedMethod = '';
+        for (const rb of radioButtons) {
+            if (rb.checked) {
+                selectedMethod = rb.value;
+                break;
+            }
+        }
+
+        if (selectedMethod === 'COD') {
+            paymentInfoBox.classList.add('d-none');
+            buktiBayarInput.removeAttribute('required');
+        } else {
+            paymentInfoBox.classList.remove('d-none');
+            buktiBayarInput.setAttribute('required', 'required');
+        }
+    }
+
+    for (const rb of radioButtons) {
+        rb.addEventListener('change', togglePaymentInfo);
+    }
+
+    // Initial check
+    togglePaymentInfo();
+});
+</script>
+
+{% endblock content %}

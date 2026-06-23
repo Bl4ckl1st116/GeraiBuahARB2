@@ -1,0 +1,113 @@
+{% extends "core/index.html" %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+
+      <!-- Hero Start -->
+        <div class="container-fluid py-5 mb-5 hero-header">
+            <div class="container py-5">
+                <div class="row g-5 align-items-center">
+                    <div class="col-md-12 col-lg-7">
+                        <h4 class="mb-3 text-secondary">100% Buah Segar</h4>
+                        <h1 class="mb-5 display-3 text-primary">Gerai Buah ARB</h1>
+                        <form action="{% url 'buah' %}" method="GET" class="position-relative mx-auto">
+                            <input name="q" class="form-control border-2 border-secondary w-75 py-3 px-4 rounded-pill" type="text" placeholder="Cari buah...">
+                            <button type="submit" class="btn btn-primary border-2 border-secondary py-3 px-4 position-absolute rounded-pill text-white h-100" style="top: 0; right: 25%;">Cari</button>
+                        </form>
+                    </div>
+                    <div class="col-md-12 col-lg-5">
+                        <div id="carouselId" class="carousel slide position-relative" data-bs-ride="carousel">
+                            <div class="carousel-inner" role="listbox">
+                                <div class="carousel-item active rounded">
+                                    <img src="{% static 'img/hero-img-1.png' %}" class="img-fluid w-100 h-100 bg-secondary rounded" alt="Gerai Buah ARB">
+                                    <a href="{% url 'buah' %}" class="btn px-4 py-2 text-white rounded">Belanja Sekarang</a>
+                                </div>
+                                <div class="carousel-item rounded">
+                                    <img src="{% static 'img/hero-img-2.jpg' %}" class="img-fluid w-100 h-100 rounded" alt="Gerai Buah ARB">
+                                    <a href="{% url 'buah' %}" class="btn px-4 py-2 text-white rounded">Belanja Sekarang</a>
+                                </div>
+                            </div>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#carouselId" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Previous</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#carouselId" data-bs-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Next</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Hero End -->
+
+        <!-- Bestsaler Product Start -->
+        <!-- <div class="container-fluid py-5">
+            <div class="container py-5">
+                <div class="text-center mx-auto mb-5" style="max-width: 700px;">
+                    <h1 class="display-4">Bestseller Products</h1>
+                    <p>Produk buah pilihan yang paling sering dibeli pelanggan.</p>
+                </div>
+                <div class="row g-4">
+                    {% for b in bestseller_list %}
+                    <div class="col-lg-6 col-xl-4">
+                        <div class="p-4 rounded bg-light">
+                            <div class="row align-items-center">
+                                <div class="col-6">
+                                    <img src="{{ b.fotoBuah.url }}" class="img-fluid rounded-circle w-100" alt="{{ b.namaBuah }}">
+                                </div>
+                                <div class="col-6">
+                                    <a href="#" class="h5">{{ b.namaBuah }}</a>
+                                    <div class="d-flex my-2">
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                    <h4 class="mb-2">Rp. {{ b.hargaBuah|intcomma }}</h4>
+                                    <p class="mb-2">
+                                        {% if b.stokBuah > 0 %}
+                                            <span class="badge bg-success"><i class="fas fa-box me-1"></i>Stok: {{ b.stokBuah }} kg</span>
+                                        {% else %}
+                                            <span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i>Habis</span>
+                                        {% endif %}
+                                    </p>
+                                    
+                                    <form action="{% url 'tambah_ke_keranjang' b.idBuah %}" method="POST">
+                                        {% csrf_token %}
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="input-group quantity" style="width: 130px;">
+                                                <div class="input-group-btn">
+                                                    <button type="button" class="btn btn-sm btn-minus rounded-circle bg-light border" onclick="event.preventDefault(); event.stopImmediatePropagation(); var inp = this.closest('.quantity').querySelector('input'); var val = parseInt(inp.value); if(val > 1) { inp.value = val - 1; }">
+                                                        <i class="fa fa-minus"></i>
+                                                    </button>
+                                                </div>
+                                                <input type="number" name="qty" class="form-control form-control-sm text-center border-0 bg-transparent" value="1" min="1" max="{{ b.stokBuah }}" style="box-shadow: none; min-width: 60px; text-align: center; padding: 5px;">
+                                                <div class="input-group-btn">
+                                                    <button type="button" class="btn btn-sm btn-plus rounded-circle bg-light border" onclick="event.preventDefault(); event.stopImmediatePropagation(); var inp = this.closest('.quantity').querySelector('input'); var val = parseInt(inp.value); var max = parseInt(inp.max) || 9999; if(val < max) { inp.value = val + 1; }">
+                                                        <i class="fa fa-plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn border border-secondary rounded-pill px-3 text-primary {% if b.stokBuah <= 0 %}disabled{% endif %}">
+                                            <i class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <p class="text-center">Belum ada produk yang tersedia.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div> -->
+        <!-- Bestsaler Product End -->
+
+{% endblock content %}

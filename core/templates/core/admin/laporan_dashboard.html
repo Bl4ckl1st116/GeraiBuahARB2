@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan — Gerai Buah ARB</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 40%, #f0f9ff 100%);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .dashboard-wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px 60px;
+        }
+
+        /* Back button */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 32px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: #16a34a;
+            background: rgba(22, 163, 74, 0.08);
+        }
+
+        /* Header */
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .dashboard-header .icon-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 24px rgba(22, 163, 74, 0.3);
+        }
+
+        .dashboard-header .icon-circle i {
+            font-size: 32px;
+            color: white;
+        }
+
+        .dashboard-header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0 0 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .dashboard-header p {
+            font-size: 16px;
+            color: #64748b;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        /* Cards grid */
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .report-card {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            display: block;
+            cursor: pointer;
+        }
+
+        .report-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            border-radius: 16px 16px 0 0;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+
+        .report-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 8px 16px rgba(0, 0, 0, 0.04);
+            border-color: transparent;
+        }
+
+        .report-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Card color variants */
+        .report-card.buah::before { background: linear-gradient(90deg, #22c55e, #4ade80); }
+        .report-card.pelanggan::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .report-card.pembelian::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .report-card.pemasok::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+        .report-card.pengadaan::before { background: linear-gradient(90deg, #f43f5e, #fb7185); }
+
+        .report-card .card-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+            font-size: 22px;
+            transition: transform 0.35s ease;
+        }
+
+        .report-card:hover .card-icon {
+            transform: scale(1.1);
+        }
+
+        .report-card.buah .card-icon { background: #f0fdf4; color: #16a34a; }
+        .report-card.pelanggan .card-icon { background: #eff6ff; color: #2563eb; }
+        .report-card.pembelian .card-icon { background: #fffbeb; color: #d97706; }
+        .report-card.pemasok .card-icon { background: #f5f3ff; color: #7c3aed; }
+        .report-card.pengadaan .card-icon { background: #fff1f2; color: #e11d48; }
+
+        .report-card .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0 0 6px;
+        }
+
+        .report-card .card-desc {
+            font-size: 14px;
+            color: #94a3b8;
+            margin: 0 0 20px;
+            line-height: 1.5;
+        }
+
+        .report-card .card-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .report-card.buah .card-action { color: #16a34a; background: #f0fdf4; }
+        .report-card.pelanggan .card-action { color: #2563eb; background: #eff6ff; }
+        .report-card.pembelian .card-action { color: #d97706; background: #fffbeb; }
+        .report-card.pemasok .card-action { color: #7c3aed; background: #f5f3ff; }
+        .report-card.pengadaan .card-action { color: #e11d48; background: #fff1f2; }
+
+        .report-card:hover .card-action {
+            gap: 10px;
+        }
+
+        .report-card .card-action i.fa-arrow-right {
+            transition: transform 0.2s ease;
+        }
+
+        .report-card:hover .card-action i.fa-arrow-right {
+            transform: translateX(3px);
+        }
+
+        /* Footer */
+        .dashboard-footer {
+            text-align: center;
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-wrapper { padding: 24px 16px 40px; }
+            .report-grid { grid-template-columns: 1fr; gap: 16px; }
+            .dashboard-header h1 { font-size: 24px; }
+        }
+
+        /* Entrance animation */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .report-card {
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        .report-card:nth-child(1) { animation-delay: 0.05s; }
+        .report-card:nth-child(2) { animation-delay: 0.1s; }
+        .report-card:nth-child(3) { animation-delay: 0.15s; }
+        .report-card:nth-child(4) { animation-delay: 0.2s; }
+        .report-card:nth-child(5) { animation-delay: 0.25s; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-wrapper">
+        <!-- Back to Admin -->
+        <a href="/admin/" class="back-link">
+            <i class="fas fa-arrow-left"></i> Kembali ke Dashboard
+        </a>
+
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="icon-circle">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <h1>Pusat Laporan</h1>
+            <p>Pilih jenis laporan yang ingin Anda buat dan cetak</p>
+        </div>
+
+        <!-- Report Cards -->
+        <div class="report-grid">
+            <!-- Buah -->
+            <a href="/admin/laporan/buah/" class="report-card buah">
+                <div class="card-icon">
+                    <i class="fas fa-apple-whole"></i>
+                </div>
+                <h3 class="card-title">Laporan Buah</h3>
+                <p class="card-desc">Lihat dan cetak data buah termasuk harga, stok, diskon, dan tanggal kadaluarsa</p>
+                <span class="card-action">
+                    Buat Laporan <i class="fas fa-arrow-right"></i>
+                </span>
+            </a>
+
+            <!-- Pelanggan -->
+            <a href="/admin/laporan/pelanggan/" class="report-card pelanggan">
+                <div class="card-icon">
+                    <i class="fas fa-user-group"></i>
+                </div>
+                <h3 class="card-title">Laporan Pelanggan</h3>
+                <p class="card-desc">Lihat dan cetak data pelanggan termasuk nama, username, nomor HP, dan alamat</p>
+                <span class="card-action">
+                    Buat Laporan <i class="fas fa-arrow-right"></i>
+                </span>
+            </a>
+
+            <!-- Pembelian -->
+            <a href="/admin/laporan/pembelian/" class="report-card pembelian">
+                <div class="card-icon">
+                    <i class="fas fa-cart-shopping"></i>
+                </div>
+                <h3 class="card-title">Laporan Pembelian</h3>
+                <p class="card-desc">Lihat dan cetak riwayat pembelian dengan filter tanggal, status, dan total harga</p>
+                <span class="card-action">
+                    Buat Laporan <i class="fas fa-arrow-right"></i>
+                </span>
+            </a>
+
+            <!-- Pemasok -->
+            <a href="/admin/laporan/pemasok/" class="report-card pemasok">
+                <div class="card-icon">
+                    <i class="fas fa-address-book"></i>
+                </div>
+                <h3 class="card-title">Laporan Pemasok</h3>
+                <p class="card-desc">Lihat dan cetak data pemasok buah termasuk nama, nomor HP, dan alamat pemasok</p>
+                <span class="card-action">
+                    Buat Laporan <i class="fas fa-arrow-right"></i>
+                </span>
+            </a>
+
+            <!-- Pengadaan -->
+            <a href="/admin/laporan/pengadaan/" class="report-card pengadaan">
+                <div class="card-icon">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <h3 class="card-title">Laporan Pengadaan</h3>
+                <p class="card-desc">Lihat dan cetak data pengadaan barang dengan filter berdasarkan tanggal masuk</p>
+                <span class="card-action">
+                    Buat Laporan <i class="fas fa-arrow-right"></i>
+                </span>
+            </a>
+        </div>
+
+        <!-- Footer -->
+        <div class="dashboard-footer">
+            <i class="fas fa-shield-halved"></i> Gerai Buah ARB — Sistem Manajemen Toko Buah
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+{% extends "admin/base.html" %}
+
+{% block extrajs %}
+{{ block.super }}
+
+{% if total_alerts > 0 %}
+<!-- Freshness Alert Modal Overlay -->
+<div id="freshnessAlertModal" style="
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 99999;
+    display: flex; align-items: center; justify-content: center;
+">
+    <div style="
+        background: #fff; border-radius: 12px; max-width: 620px; width: 92%;
+        max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        animation: modalSlideIn 0.3s ease-out;
+    ">
+        <!-- Header -->
+        <div style="
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white; padding: 20px 24px; border-radius: 12px 12px 0 0;
+            display: flex; align-items: center; justify-content: space-between;
+        ">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
+                <div>
+                    <h4 style="margin: 0; font-size: 18px;">⚠️ Peringatan Kesegaran Buah</h4>
+                    <small style="opacity: 0.9;">{{ total_alerts }} batch memerlukan perhatian</small>
+                </div>
+            </div>
+            <button onclick="document.getElementById('freshnessAlertModal').style.display='none'"
+                style="background: rgba(255,255,255,0.2); border: none; color: white;
+                       width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+                       font-size: 18px; display: flex; align-items: center; justify-content: center;">
+                ✕
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 24px;">
+
+            {% if kritis_buah %}
+            <!-- Critical: Expired or expiring today -->
+            <div style="
+                background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #dc2626;
+                border-radius: 8px; padding: 16px; margin-bottom: 16px;
+            ">
+                <h5 style="color: #dc2626; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-times-circle"></i> KRITIS — Sudah Kedaluwarsa / Hari Ini
+                </h5>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead>
+                        <tr style="background: #fee2e2;">
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #fecaca;">Buah</th>
+                            <th style="padding: 8px; text-align: center; border-bottom: 1px solid #fecaca;">Qty (kg)</th>
+                            <th style="padding: 8px; text-align: center; border-bottom: 1px solid #fecaca;">Masuk</th>
+                            <th style="padding: 8px; text-align: center; border-bottom: 1px solid #fecaca;">Kedaluwarsa</th>
+                            <th style="padding: 8px; text-align: center; border-bottom: 1px solid #fecaca;">Sisa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in kritis_buah %}
+                        <tr>
+                            <td style="padding: 8px; font-weight: 600;">🍎 {{ item.nama }}</td>
+                            <td style="padding: 8px; text-align: center;">{{ item.kuantitas }}</td>
+                            <td style="padding: 8px; text-align: center;">{{ item.tanggal_masuk }}</td>
+                            <td style="padding: 8px; text-align: center;">{{ item.exp_date }}</td>
+                            <td style="padding: 8px; text-align: center;">
+                                <span style="background: #dc2626; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
+                                    {% if item.sisa_hari == 0 %}Hari Ini{% else %}{{ item.sisa_hari }} hari{% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% if peringatan_buah %}
+            <!-- Warning: Expiring in 1-2 days -->
+            <div style="
+                background: #fffbeb; border: 1px solid #fed7aa; border-left: 4px solid #f59e0b;
+                border-radius: 8px; padding: 16px; margin-bottom: 16px;
+            ">
+                <h5 style="color: #d97706; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-exclamation-circle"></i> PERINGATAN — Segera Kadaluarsa (1-2 Hari)
+                </h5>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead>
+                        <tr style="background: #fef3c7;">
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #fed7aa;">Buah</th>
+                            <th style="padding: 8px; text-align: center; border-bottom: 1px solid #fed7aa;">Qty (kg)</th>
+                            <th style="padding: 8px; text-align: center; border-bottom: 1px solid #fed7aa;">Masuk</th>
+                            <th style="padding: 8px; text-align: center; border-bottom: 1px solid #fed7aa;">Kadaluarsa</th>
+                            <th style="padding: 8px; text-align: center; border-bottom: 1px solid #fed7aa;">Sisa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in peringatan_buah %}
+                        <tr>
+                            <td style="padding: 8px; font-weight: 600;">🍊 {{ item.nama }}</td>
+                            <td style="padding: 8px; text-align: center;">{{ item.kuantitas }}</td>
+                            <td style="padding: 8px; text-align: center;">{{ item.tanggal_masuk }}</td>
+                            <td style="padding: 8px; text-align: center;">{{ item.exp_date }}</td>
+                            <td style="padding: 8px; text-align: center;">
+                                <span style="background: #f59e0b; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
+                                    {{ item.sisa_hari }} hari
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Footer -->
+        <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; text-align: right;">
+            <button onclick="document.getElementById('freshnessAlertModal').style.display='none'"
+                style="background: linear-gradient(135deg, #28a745, #218838); color: white;
+                       border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer;
+                       font-size: 14px; font-weight: 600;">
+                <i class="fas fa-check"></i> Mengerti
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes modalSlideIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endif %}
+
+{% endblock %}

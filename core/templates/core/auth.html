@@ -1,0 +1,195 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Login & Register - Gerai Buah ARB</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link rel="icon" href="{% static 'img/fruits.png' %}" type="image/png" />
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Raleway:wght@600;800&display=swap" rel="stylesheet" />
+    <!-- Icon Font Stylesheet -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet" />
+    <!-- Template Stylesheet -->
+    <link href="{% static 'css/style.css' %}" rel="stylesheet" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      body { margin: 0; font-family: Roboto, -apple-system, "Helvetica Neue", "Segoe UI", Arial, sans-serif; background: #719a2f; }
+      .forms-section { display: flex; flex-direction: column; justify-content: center; align-items: center; padding-top: 140px; padding-bottom: 80px; }
+      .section-title { font-size: 32px; letter-spacing: 1px; color: #fff; }
+      .forms { display: flex; align-items: flex-start; margin-top: 30px; }
+      .form-wrapper { animation: hideLayer 0.3s ease-out forwards; }
+      .form-wrapper.is-active { animation: showLayer 0.3s ease-in forwards; }
+      @keyframes showLayer { 50% { z-index: 1; } 100% { z-index: 1; } }
+      @keyframes hideLayer { 0% { z-index: 1; } 49.999% { z-index: 1; } }
+      .switcher { position: relative; cursor: pointer; display: block; margin-right: auto; margin-left: auto; padding: 0; text-transform: uppercase; font-family: inherit; font-size: 16px; letter-spacing: 0.5px; color: #999; background-color: transparent; border: none; outline: none; transform: translateX(0); transition: all 0.3s ease-out; }
+      .form-wrapper.is-active .switcher-login { color: #fff; transform: translateX(90px); }
+      .form-wrapper.is-active .switcher-signup { color: #fff; transform: translateX(-90px); }
+      .underline { position: absolute; bottom: -5px; left: 0; overflow: hidden; pointer-events: none; width: 100%; height: 2px; }
+      .underline::before { content: ""; position: absolute; top: 0; left: inherit; display: block; width: inherit; height: inherit; background-color: currentColor; transition: transform 0.2s ease-out; }
+      .switcher-login .underline::before { transform: translateX(101%); }
+      .switcher-signup .underline::before { transform: translateX(-101%); }
+      .form-wrapper.is-active .underline::before { transform: translateX(0); }
+      .form { overflow: hidden; min-width: 500px; margin-top: 50px; padding: 30px 25px; border-radius: 5px; background: #fff; transform-origin: top; }
+      .form-login { animation: hideLogin 0.3s ease-out forwards; }
+      .form-wrapper.is-active .form-login { animation: showLogin 0.3s ease-in forwards; }
+      @keyframes showLogin { 0% { background: #d7e7f1; transform: translate(40%, 10px); } 50% { transform: translate(0, 0); } 100% { background-color: #fff; transform: translate(35%, -20px); } }
+      @keyframes hideLogin { 0% { background-color: #fff; transform: translate(35%, -20px); } 50% { transform: translate(0, 0); } 100% { background: #d7e7f1; transform: translate(40%, 10px); } }
+      .form-signup { animation: hideSignup 0.3s ease-out forwards; }
+      .form-wrapper.is-active .form-signup { animation: showSignup 0.3s ease-in forwards; }
+      @keyframes showSignup { 0% { background: #d7e7f1; transform: translate(-40%, 10px) scaleY(0.8); } 50% { transform: translate(0, 0) scaleY(0.8); } 100% { background-color: #fff; transform: translate(-35%, -20px) scaleY(1); } }
+      @keyframes hideSignup { 0% { background-color: #fff; transform: translate(-35%, -20px) scaleY(1); } 50% { transform: translate(0, 0) scaleY(0.8); } 100% { background: #d7e7f1; transform: translate(-40%, 10px) scaleY(0.8); } }
+      .form fieldset { position: relative; opacity: 0; margin: 0; padding: 0; border: 0; transition: all 0.3s ease-out; }
+      .form-login fieldset { transform: translateX(-50%); }
+      .form-signup fieldset { transform: translateX(50%); }
+      .form-wrapper.is-active fieldset { opacity: 1; transform: translateX(0); transition: opacity 0.4s ease-in, transform 0.35s ease-in; }
+      .form legend { position: absolute; overflow: hidden; width: 1px; height: 1px; clip: rect(0 0 0 0); }
+      .input-block { margin-bottom: 20px; }
+      .input-block label { font-size: 14px; color: #a1b4b4; }
+      .input-block input { display: block; width: 100%; margin-top: 8px; padding-right: 15px; padding-left: 15px; font-size: 16px; line-height: 40px; color: #3b4465; background: #eef9fe; border: 1px solid #cddbef; border-radius: 2px; }
+      .form [type="submit"] { opacity: 0; display: block; min-width: 120px; margin: 30px auto 10px; font-size: 18px; line-height: 40px; border-radius: 25px; border: none; transition: all 0.3s ease-out; }
+      .form-wrapper.is-active .form [type="submit"] { opacity: 1; transform: translateX(0); transition: all 0.4s ease-in; }
+      .btn-login { color: #fbfdff; background: #a7e245; transform: translateX(-30%); }
+      .btn-signup { color: #a7e245; background: #fbfdff; box-shadow: inset 0 0 0 2px #a7e245; transform: translateX(30%); }
+    </style>
+</head>
+<body>
+    <!-- Django Messages Toast Notifications -->
+    {% if messages %}
+    <div id="toast-container" style="
+        position: fixed; top: 24px; right: 24px; z-index: 99999;
+        display: flex; flex-direction: column; gap: 10px;
+    ">
+        {% for message in messages %}
+        <div class="toast-notif" style="
+            min-width: 320px; max-width: 450px; padding: 16px 20px;
+            border-radius: 10px; color: #fff; font-size: 15px;
+            display: flex; align-items: center; gap: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            animation: toastSlideIn 0.4s ease-out;
+            {% if message.tags == 'success' %}
+            background: linear-gradient(135deg, #28a745, #218838);
+            {% elif message.tags == 'error' %}
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            {% elif message.tags == 'warning' %}
+            background: linear-gradient(135deg, #ffc107, #e0a800); color: #333;
+            {% else %}
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            {% endif %}
+        ">
+            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-times-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}" style="font-size: 20px;"></i>
+            <span style="flex: 1;">{{ message }}</span>
+            <button onclick="this.parentElement.style.display='none'" style="
+                background: none; border: none; color: inherit; font-size: 18px;
+                cursor: pointer; opacity: 0.8; padding: 0; line-height: 1;
+            ">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    <style>
+        @keyframes toastSlideIn {
+            from { opacity: 0; transform: translateX(60px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes toastSlideOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(60px); }
+        }
+    </style>
+    <script>
+        // Auto-dismiss toasts after 4 seconds
+        setTimeout(function() {
+            document.querySelectorAll('.toast-notif').forEach(function(el) {
+                el.style.animation = 'toastSlideOut 0.4s ease-in forwards';
+                setTimeout(function() { el.style.display = 'none'; }, 400);
+            });
+        }, 4000);
+    </script>
+    {% endif %}
+
+    <div class="container-fluid p-0">
+        <a href="{% url 'index' %}" class="btn btn-secondary m-4 text-white"><i class="fas fa-arrow-left me-2"></i>Kembali ke Toko</a>
+    </div>
+
+    <section class="forms-section">
+      <h1 class="section-title">Gerai Buah ARB</h1>
+      
+      <div class="forms">
+        <div class="form-wrapper is-active">
+          <button type="button" class="switcher switcher-login">
+            Login
+            <span class="underline"></span>
+          </button>
+          <form class="form form-login" action="{% url 'login_pelanggan' %}" method="POST">
+            {% csrf_token %}
+            <fieldset>
+              <legend>Please, enter your username and password for login.</legend>
+              <div class="input-block">
+                <label for="login-username">Username</label>
+                <input id="login-username" name="username" type="text" required />
+              </div>
+              <div class="input-block">
+                <label for="login-password">Password</label>
+                <input id="login-password" name="password" type="password" required />
+              </div>
+            </fieldset>
+            <button type="submit" class="btn-login">Login</button>
+          </form>
+        </div>
+        <div class="form-wrapper">
+          <button type="button" class="switcher switcher-signup">
+            Sign Up
+            <span class="underline"></span>
+          </button>
+          <form class="form form-signup" action="{% url 'register_pelanggan' %}" method="POST">
+            {% csrf_token %}
+            <fieldset>
+              <legend>
+                Silakan isi data lengkap Anda untuk registrasi.
+              </legend>
+              <div class="input-block">
+                <label for="signup-username">Username</label>
+                <input id="signup-username" name="username" type="text" required />
+              </div>
+              <div class="input-block">
+                <label for="signup-password">Password</label>
+                <input id="signup-password" name="password" type="password" required />
+              </div>
+              <div class="input-block">
+                <label for="signup-nama">Nama Pelanggan</label>
+                <input id="signup-nama" name="namaPelanggan" type="text" required />
+              </div>
+              <div class="input-block">
+                <label for="signup-nohp">No HP</label>
+                <input id="signup-nohp" name="noHp" type="text" required />
+              </div>
+              <div class="input-block">
+                <label for="signup-alamat">Alamat</label>
+                <textarea id="signup-alamat" name="alamat" rows="3" style="width:100%; padding:8px; background:#eef9fe; border:1px solid #cddbef; border-radius:2px;" required></textarea>
+              </div>
+            </fieldset>
+            <button type="submit" class="btn-signup">Sign Up</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const switchers = [...document.querySelectorAll(".switcher")];
+      switchers.forEach((item) => {
+        item.addEventListener("click", function () {
+          switchers.forEach((item) => item.parentElement.classList.remove("is-active"));
+          this.parentElement.classList.add("is-active");
+        });
+      });
+    </script>
+</body>
+</html>
