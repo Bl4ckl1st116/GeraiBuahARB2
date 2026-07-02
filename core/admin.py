@@ -12,7 +12,8 @@ admin.site.unregister(Group)
 from .models import (
     Buah, Pelanggan,
     Pembelian, DetailPembelian,
-    Pemasok, Pengadaan, DetailPengadaan
+    Pemasok, Pengadaan, DetailPengadaan,
+    Karyawan, LogAktivitasKaryawan
 )
 from .utils.pdf import generate_pdf
 
@@ -277,3 +278,56 @@ def safe_admin_index(request, extra_context=None):
 # Apply the wrapper
 admin.site.index = safe_admin_index
 
+
+@admin.register(Karyawan)
+class KaryawanAdmin(admin.ModelAdmin):
+    # Kolom yang akan tampil di tabel depan
+    list_display = ('idKaryawan', 'namaKaryawan', 'noHp', 'status_password')
+    
+    # Menambahkan fitur pencarian berdasarkan nama dan no HP
+    search_fields = ('namaKaryawan', 'noHp')
+    
+    # Agar layout form edit lebih rapi
+    fieldsets = (
+        ('Informasi Pribadi', {
+            'fields': ('namaKaryawan', 'noHp')
+        }),
+        ('Autentikasi', {
+            'fields': ('password',),
+            'description': 'Teks password yang tampil di bawah adalah versi terenkripsi (acak). Untuk mereset password karyawan, hapus teks acak tersebut dan ketik password baru, lalu klik Save.'
+        }),
+    )
+
+    # Fungsi kustom untuk menampilkan status password di tabel (agar tidak menuh-menuhin layar dengan teks acak)
+    def status_password(self, obj):
+        if obj.password:
+            return "Terenkripsi (Aman)"
+        return "Belum diatur"
+    status_password.short_description = 'Password'
+
+
+@admin.register(LogAktivitasKaryawan)
+class LogAktivitasKaryawanAdmin(admin.ModelAdmin):
+    # Kolom yang akan tampil di tabel depan
+    list_display = ('timestamp', 'idKaryawan', 'aksi', 'target_model', 'target_id', 'potong_deskripsi')
+    
+    # Filter di sidebar kanan untuk memudahkan pencarian log
+    list_filter = ('aksi', 'target_model', 'timestamp', 'idKaryawan')
+    
+    # Fitur pencarian berdasarkan deskripsi dan nama karyawan
+    search_fields = ('deskripsi', 'idKaryawan__namaKaryawan')
+    
+    # LOG TIDAK BOLEH DIEDIT (Keamanan Data)
+    # Kita kunci semua field agar superuser hanya bisa melihat (Read Only)
+    readonly_fields = ('idKaryawan', 'aksi', 'target_model', 'target_id', 'deskripsi', 'timestamp')
+
+    # Mencegah admin menambahkan log secara manual dari panel admin
+    def has_add_permission(self, request):
+        return False
+
+    # Fungsi untuk memotong deskripsi agar tabel tidak terlalu lebar
+    def potong_deskripsi(self, obj):
+        if len(obj.deskripsi) > 50:
+            return f"{obj.deskripsi[:50]}..."
+        return obj.deskripsi
+    potong_deskripsi.short_description = 'Deskripsi Aktivitas'

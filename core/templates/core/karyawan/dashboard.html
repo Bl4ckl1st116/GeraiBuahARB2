@@ -1,0 +1,140 @@
+{% extends 'core/karyawan/base.html' %}
+
+{% block title %}Dashboard Karyawan{% endblock %}
+
+{% block content %}
+<!-- Welcome Banner -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="p-4 bg-brand-success text-white rounded-4 shadow-sm position-relative overflow-hidden">
+            <div style="position: absolute; right: -20px; bottom: -20px; opacity: 0.15; font-size: 150px;">
+                <i class="fa-solid fa-apple-whole"></i>
+            </div>
+            <div class="position-relative">
+                <h2 class="fw-bold mb-1">Halo, {{ karyawan.namaKaryawan }}!</h2>
+                <p class="mb-0 fs-5 opacity-90">Selamat bekerja! Di sini Anda bisa mengelola stok buah, pesanan dari pembeli, dan data pelanggan.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistik Ringkas -->
+<div class="row g-3 mb-4 text-center">
+    <!-- Buah -->
+    <div class="col-12 col-md-4">
+        <div class="card card-stat py-3">
+            <div class="card-body">
+                <div class="text-success mb-2" style="font-size: 2.5rem;">
+                    <i class="fa-solid fa-apple-whole"></i>
+                </div>
+                <h5 class="text-muted fw-normal mb-1">Jumlah Jenis Buah</h5>
+                <h2 class="fw-bold m-0" style="color: #81C408;">{{ total_buah }} jenis</h2>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pembelian / Pesanan -->
+    <div class="col-12 col-md-4">
+        <div class="card card-stat py-3">
+            <div class="card-body">
+                <div class="text-warning mb-2" style="font-size: 2.5rem;">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                </div>
+                <h5 class="text-muted fw-normal mb-1">Total Pesanan Masuk</h5>
+                <h2 class="fw-bold m-0" style="color: #FFB524;">{{ total_pembelian }} pesanan</h2>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pelanggan -->
+    <div class="col-12 col-md-4">
+        <div class="card card-stat py-3">
+            <div class="card-body">
+                <div class="text-info mb-2" style="font-size: 2.5rem;">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <h5 class="text-muted fw-normal mb-1">Pelanggan Terdaftar</h5>
+                <h2 class="fw-bold m-0 text-info">{{ total_pelanggan }} orang</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Menu Navigasi Cepat (Tombol Sentuh Besar) -->
+<div class="row g-3 mb-5">
+    <div class="col-12"><h4 class="fw-bold mb-2">Pilih Pekerjaan Anda:</h4></div>
+    
+    <div class="col-12 col-sm-4">
+        <a href="{% url 'karyawan_buah_list' %}" class="btn btn-brand-success btn-lg w-100 py-4 fs-5 rounded-4 shadow-sm touch-btn flex-column gap-2" style="height: auto;">
+            <i class="fa-solid fa-apple-whole fs-2"></i>
+            <span>Kelola Stok Buah</span>
+        </a>
+    </div>
+    
+    <div class="col-12 col-sm-4">
+        <a href="{% url 'karyawan_pembelian_list' %}" class="btn btn-brand-accent btn-lg w-100 py-4 fs-5 rounded-4 shadow-sm touch-btn flex-column gap-2" style="height: auto;">
+            <i class="fa-solid fa-cart-shopping fs-2"></i>
+            <span>Kelola Pesanan Masuk</span>
+        </a>
+    </div>
+    
+    <div class="col-12 col-sm-4">
+        <a href="{% url 'karyawan_pelanggan_list' %}" class="btn btn-info text-white btn-lg w-100 py-4 fs-5 rounded-4 shadow-sm touch-btn flex-column gap-2" style="height: auto; background-color: #0dcaf0; border-color: #0dcaf0;">
+            <i class="fa-solid fa-users fs-2"></i>
+            <span>Kelola Akun Pelanggan</span>
+        </a>
+    </div>
+</div>
+
+<!-- Log Aktivitas Karyawan Terbaru -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 rounded-4 p-4">
+            <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
+                <h4 class="fw-bold m-0"><i class="fa-solid fa-clock-rotate-left me-2 text-secondary"></i> Catatan Aktivitas Terbaru</h4>
+                <span class="badge bg-secondary p-2">Terbaru</span>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" style="width: 15%">Waktu</th>
+                            <th scope="col" style="width: 20%">Nama Karyawan</th>
+                            <th scope="col" style="width: 15%">Aksi</th>
+                            <th scope="col" style="width: 50%">Detail Aktivitas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if logs %}
+                            {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.timestamp|date:"d M Y, H:i" }}</td>
+                                    <td><strong>{{ log.idKaryawan.namaKaryawan }}</strong></td>
+                                    <td>
+                                        {% if log.aksi == 'CREATE' %}
+                                            <span class="badge bg-success p-2 fs-7"><i class="fa-solid fa-plus me-1"></i> Tambah</span>
+                                        {% elif log.aksi == 'UPDATE' %}
+                                            <span class="badge bg-warning text-dark p-2 fs-7"><i class="fa-solid fa-pen me-1"></i> Edit</span>
+                                        {% else %}
+                                            <span class="badge bg-danger p-2 fs-7"><i class="fa-solid fa-trash me-1"></i> Hapus</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ log.deskripsi }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">
+                                    <i class="fa-solid fa-folder-open fs-3 d-block mb-2"></i>
+                                    Belum ada log catatan aktivitas karyawan.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

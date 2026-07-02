@@ -1,0 +1,554 @@
+{% extends 'core/karyawan/base.html' %}
+{% load humanize %}
+
+{% block title %}Kelola Pesanan Masuk{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-12 col-md-6 mb-3 mb-md-0">
+        <h3 class="fw-bold m-0"><i class="fa-solid fa-cart-shopping text-success me-2"></i> Daftar Pesanan Pelanggan</h3>
+        <p class="text-muted m-0 fs-6">Catat transaksi baru, perbarui status pesanan, dan isi item belanjaan pembeli.</p>
+    </div>
+    <div class="col-12 col-md-6 text-md-end">
+        <button type="button" class="btn btn-brand-success btn-lg touch-btn shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahPembelian" style="padding: 14px 28px; border-radius: 12px;">
+            <i class="fa-solid fa-cart-plus me-2"></i> Buat Pesanan Baru
+        </button>
+    </div>
+</div>
+
+<!-- Form Pencarian & Pengaturan Tampilan -->
+<div class="row mb-4 g-2 align-items-center justify-content-between">
+    <!-- Kolom Pencarian -->
+    <div class="col-12 col-md-6">
+        <form method="GET" action="" class="d-flex gap-2">
+            {% if limit %}
+                <input type="hidden" name="limit" value="{{ limit }}">
+            {% endif %}
+            <input type="text" name="q" value="{{ q }}" class="form-control form-control-lg" placeholder="Cari ID pesanan, nama pembeli, alamat, atau status..." style="border-radius: 10px;">
+            <button type="submit" class="btn btn-brand-success touch-btn px-4 shadow-sm" style="border-radius: 10px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            {% if q %}
+                <a href="?limit={{ limit }}" class="btn btn-secondary touch-btn px-3 d-flex align-items-center" style="border-radius: 10px;">
+                    <i class="fa-solid fa-arrow-rotate-right"></i>
+                </a>
+            {% endif %}
+        </form>
+    </div>
+    <!-- Kolom Dropdown Tampilan -->
+    <div class="col-12 col-md-3 text-md-end">
+        <form method="GET" action="" class="d-inline-flex align-items-center gap-2">
+            {% if q %}
+                <input type="hidden" name="q" value="{{ q }}">
+            {% endif %}
+            <label for="limit" class="text-nowrap fw-bold text-muted small m-0">Tampilkan:</label>
+            <select name="limit" id="limit" class="form-select" onchange="this.form.submit()" style="border-radius: 8px; width: auto; min-height: 44px;">
+                <option value="10" {% if limit == '10' %}selected{% endif %}>10 Baris</option>
+                <option value="20" {% if limit == '20' %}selected{% endif %}>20 Baris</option>
+                <option value="all" {% if limit == 'all' %}selected{% endif %}>Semua</option>
+            </select>
+        </form>
+    </div>
+</div>
+
+<!-- Tabel Pesanan -->
+<div class="card shadow-sm border-0 rounded-4 p-3">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col" style="width: 8%">ID</th>
+                    <th scope="col" style="width: 17%">Nama Pelanggan</th>
+                    <th scope="col" style="width: 12%">Tanggal</th>
+                    <th scope="col" style="width: 12%">Total Bayar</th>
+                    <th scope="col" style="width: 10%">Metode</th>
+                    <th scope="col" style="width: 13%">Status</th>
+                    <th scope="col" style="width: 10%">Bukti Bayar</th>
+                    <th scope="col" style="width: 18%" class="text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if pembelian_items %}
+                    {% for item in pembelian_items %}
+                        <!-- Row Utama -->
+                        <tr>
+                            <td><strong>#{{ item.idPembelian }}</strong></td>
+                            <td>
+                                <strong>{{ item.idPelanggan.namaPelanggan }}</strong><br>
+                                <small class="text-muted">Telp: {{ item.idPelanggan.noHp }}</small>
+                            </td>
+                            <td>{{ item.tanggalPembelian|date:"d M Y, H:i" }}</td>
+                            <td><strong style="color: #81C408;">Rp {{ item.totalHargaPembelian|intcomma }} ribu</strong><br><small class="text-muted">Vol: {{ item.totalBuah }} kg</small></td>
+                            <td><span class="badge bg-light text-dark border p-2">{{ item.metodeBayar }}</span></td>
+                            <td>
+                                {% if item.statusPembelian == 'Menunggu' %}
+                                    <span class="badge bg-secondary p-2 fs-7">Menunggu</span>
+                                {% elif item.statusPembelian == 'Diproses' %}
+                                    <span class="badge bg-primary p-2 fs-7">Diproses</span>
+                                {% elif item.statusPembelian == 'Selesai' %}
+                                    <span class="badge bg-success p-2 fs-7">Selesai</span>
+                                {% else %}
+                                    <span class="badge bg-danger p-2 fs-7">Dibatalkan</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.buktiBayar %}
+                                    <img src="{{ item.buktiBayar.url }}" style="width: 50px; height: 50px; object-fit: cover; cursor: pointer; border-radius: 8px;" class="img-thumbnail img-preview-trigger shadow-sm" data-url="{{ item.buktiBayar.url }}" title="Klik untuk memperbesar">
+                                {% else %}
+                                    <span class="text-muted small">Tidak ada</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-1">
+                                    <!-- Toggle Collapse Detail Item -->
+                                    <button class="btn btn-outline-success touch-btn px-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseItems{{ item.idPembelian }}" aria-expanded="false" aria-controls="collapseItems{{ item.idPembelian }}" title="Kelola Item Buah">
+                                        <i class="fa-solid fa-basket-shopping"></i> <span class="d-none d-sm-inline">Item</span>
+                                    </button>
+                                    
+                                    <!-- Edit Button -->
+                                    <button type="button" class="btn btn-warning text-white touch-btn px-2" data-bs-toggle="modal" data-bs-target="#modalEditPembelian{{ item.idPembelian }}" title="Ubah Info / Status">
+                                        <i class="fa-solid fa-pen-to-square"></i> <span class="d-none d-sm-inline">Status</span>
+                                    </button>
+                                    
+                                    <!-- Delete Button -->
+                                    <button type="button" class="btn btn-danger touch-btn px-2" onclick="konfirmasiHapusPembelian('{{ item.idPembelian }}')" title="Hapus Transaksi">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                    <form id="formHapusPembelian{{ item.idPembelian }}" action="{% url 'karyawan_pembelian_delete' item.idPembelian %}" method="POST" style="display: none;">
+                                        {% csrf_token %}
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Row Drawer Detail Item (Collapse) -->
+                        <tr id="collapseItems{{ item.idPembelian }}" class="collapse bg-light">
+                            <td colspan="8" class="p-3">
+                                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mx-md-3">
+                                    <h5 class="fw-bold mb-3 text-secondary border-bottom pb-2">
+                                        <i class="fa-solid fa-clipboard-list text-success me-2"></i> Rincian Belanjaan Pesanan #{{ item.idPembelian }}
+                                    </h5>
+                                    
+                                    <!-- Tabel Detail Belanja -->
+                                    <div class="table-responsive mb-3">
+                                        <table class="table table-bordered table-sm align-middle">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Nama Buah</th>
+                                                    <th class="text-center" style="width: 20%">Kuantitas (Kilo)</th>
+                                                    <th class="text-end" style="width: 25%">Subtotal Harga</th>
+                                                    <th class="text-center" style="width: 15%">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for det in item.detailpembelian_set.all %}
+                                                    <tr>
+                                                        <td><strong>{{ det.idBuah.namaBuah }}</strong></td>
+                                                        <td class="text-center">{{ det.kuantitas }} kg</td>
+                                                        <td class="text-end">Rp {{ det.subHarga|intcomma }} ribu</td>
+                                                        <td class="text-center">
+                                                            <a href="{% url 'karyawan_hapus_detail' det.idDetailPembelian %}" class="btn btn-danger btn-sm touch-btn py-1 px-3">
+                                                                <i class="fa-solid fa-circle-minus"></i> Hapus
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                {% empty %}
+                                                    <tr>
+                                                        <td colspan="4" class="text-center text-muted py-3">Belum ada item buah dalam pesanan ini. Silakan tambahkan buah di bawah.</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- Form Tambah Detail Item -->
+                                    {% if item.statusPembelian != 'Dibatalkan' and item.statusPembelian != 'Selesai' %}
+                                    <form action="{% url 'karyawan_tambah_detail' item.idPembelian %}" method="POST" class="row g-2 align-items-end border-top pt-3">
+                                        {% csrf_token %}
+                                        <div class="col-12 col-md-5 text-start">
+                                            <label class="form-label fw-bold text-muted small">Pilih Buah yang Dibeli</label>
+                                            <select name="idBuah" class="form-select form-select-lg" required>
+                                                <option value="" disabled selected>-- Pilih Jenis Buah --</option>
+                                                {% for b in buah_list %}
+                                                    <option value="{{ b.idBuah }}" {% if b.stokBuah <= 0 %}disabled class="text-muted"{% endif %}>
+                                                        {{ b.namaBuah }} (Stok: {{ b.stokBuah }} kg) - Rp {{ b.hargaBuah|intcomma }} ribu
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-md-3 text-start">
+                                            <label class="form-label fw-bold text-muted small">Kuantitas (Kilo/Kg)</label>
+                                            <input type="number" name="kuantitas" class="form-control form-control-lg" min="1" required placeholder="Berapa kilo...">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <button type="submit" class="btn btn-brand-success btn-lg w-100 touch-btn">
+                                                <i class="fa-solid fa-cart-plus me-1"></i> Tambahkan Buah
+                                            </button>
+                                        </div>
+                                    </form>
+                                    {% else %}
+                                    <div class="alert alert-warning m-0">
+                                        <i class="fa-solid fa-circle-exclamation"></i> Item pesanan tidak dapat diubah karena status pesanan sudah <strong>{{ item.statusPembelian }}</strong>.
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- MODAL EDIT PEMBELIAN -->
+                        <div class="modal fade" id="modalEditPembelian{{ item.idPembelian }}" tabindex="-1" aria-labelledby="labelModalEditPembelian{{ item.idPembelian }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content rounded-4 border-0 shadow-lg">
+                                    <div class="modal-header bg-warning text-white rounded-top-4 py-3">
+                                        <h5 class="modal-title fw-bold" id="labelModalEditPembelian{{ item.idPembelian }}"><i class="fa-solid fa-pen-to-square me-2"></i> Perbarui Status Pesanan #{{ item.idPembelian }}</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form action="{% url 'karyawan_pembelian_update' item.idPembelian %}" method="POST" enctype="multipart/form-data">
+                                        {% csrf_token %}
+                                        <div class="modal-body p-4">
+                                            
+                                            <!-- Pelanggan Info -->
+                                            <div class="mb-3 text-start">
+                                                <label class="form-label fw-bold text-muted">Nama Pelanggan</label>
+                                                <input type="text" class="form-control form-control-lg bg-light" value="{{ item.idPelanggan.namaPelanggan }}" disabled>
+                                            </div>
+                                            
+                                            <!-- Status Pembelian -->
+                                            <div class="mb-3 text-start">
+                                                <label for="editStatusPembelian{{ item.idPembelian }}" class="form-label fw-bold text-dark">Status Proses Pesanan</label>
+                                                <select name="statusPembelian" id="editStatusPembelian{{ item.idPembelian }}" class="form-select form-select-lg border-primary" required>
+                                                    <option value="Menunggu" {% if item.statusPembelian == 'Menunggu' %}selected{% endif %}>Menunggu Pembayaran / Diproses</option>
+                                                    <option value="Diproses" {% if item.statusPembelian == 'Diproses' %}selected{% endif %}>Sedang Diproses (Dikemas/Dikirim)</option>
+                                                    <option value="Selesai" {% if item.statusPembelian == 'Selesai' %}selected{% endif %}>Selesai (Sudah Diterima Pembeli)</option>
+                                                    <option value="Dibatalkan" {% if item.statusPembelian == 'Dibatalkan' %}selected{% endif %}>Dibatalkan (Batalkan & Kembalikan Stok)</option>
+                                                </select>
+                                                <small class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Mengubah status menjadi <strong>Dibatalkan</strong> akan mengembalikan stok buah secara otomatis.</small>
+                                            </div>
+                                            
+                                            <!-- Metode Bayar -->
+                                            <div class="mb-3 text-start">
+                                                <label for="editMetodeBayar{{ item.idPembelian }}" class="form-label fw-bold">Metode Pembayaran</label>
+                                                <select name="metodeBayar" id="editMetodeBayar{{ item.idPembelian }}" class="form-select form-select-lg" required>
+                                                    <option value="COD" {% if item.metodeBayar == 'COD' %}selected{% endif %}>Bayar di Tempat (COD)</option>
+                                                    <option value="Transfer Bank BRI" {% if item.metodeBayar == 'Transfer Bank BRI' %}selected{% endif %}>Transfer Bank BRI</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <!-- Alamat Pengiriman -->
+                                            <div class="mb-3 text-start">
+                                                <label for="editAlamatPengiriman{{ item.idPembelian }}" class="form-label fw-bold">Alamat Pengiriman</label>
+                                                <textarea class="form-control" id="editAlamatPengiriman{{ item.idPembelian }}" name="alamatPengiriman" rows="3" required placeholder="Tulis alamat kirim paket...">{{ item.alamatPengiriman }}</textarea>
+                                            </div>
+                                            
+                                            <!-- Upload Struk Baru -->
+                                            <div class="mb-3 text-start">
+                                                <label for="editBuktiBayar{{ item.idPembelian }}" class="form-label fw-bold">Upload Struk Baru (Biarkan kosong jika tidak ada)</label>
+                                                <input type="file" class="form-control form-control-lg" id="editBuktiBayar{{ item.idPembelian }}" name="buktiBayar" accept="image/*">
+                                            </div>
+                                            
+                                        </div>
+                                        <div class="modal-footer bg-light p-3">
+                                            <button type="button" class="btn btn-secondary touch-btn px-4" data-bs-dismiss="modal">Batal</button>
+                                            <button type="submit" class="btn btn-warning text-white touch-btn px-4"><i class="fa-solid fa-save me-1"></i> Simpan Status</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            <i class="fa-solid fa-folder-open fs-3 d-block mb-2"></i>
+                            Tidak ada pesanan masuk. Klik tombol "Buat Pesanan Baru" untuk mencatat pesanan.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if limit != 'all' and pembelian_items.has_other_pages %}
+    <nav class="d-flex justify-content-center mt-4">
+        <ul class="pagination shadow-sm">
+            {% if pembelian_items.has_previous %}
+                <li class="page-item">
+                    <a class="page-link touch-btn text-success" href="?q={{ q }}&limit={{ limit }}&page={{ pembelian_items.previous_page_number }}">&laquo; Sebelum</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link touch-btn">&laquo; Sebelum</span>
+                </li>
+            {% endif %}
+            
+            {% for num in pembelian_items.paginator.page_range %}
+                {% if pembelian_items.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link touch-btn bg-brand-success border-brand-success text-white">{{ num }}</span>
+                    </li>
+                {% else %}
+                    <li class="page-item">
+                        <a class="page-link touch-btn text-success" href="?q={{ q }}&limit={{ limit }}&page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pembelian_items.has_next %}
+                <li class="page-item">
+                    <a class="page-link touch-btn text-success" href="?q={{ q }}&limit={{ limit }}&page={{ pembelian_items.next_page_number }}">Berikut &raquo;</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link touch-btn">Berikut &raquo;</span>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- MODAL TAMBAH PEMBELIAN BARU (HEADER) -->
+<div class="modal fade" id="modalTambahPembelian" tabindex="-1" aria-labelledby="labelModalTambahPembelian" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-brand-success text-white rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold" id="labelModalTambahPembelian"><i class="fa-solid fa-cart-plus me-2"></i> Buat Pesanan Baru</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'karyawan_pembelian_create' %}" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    
+                    <!-- Pilih Pelanggan -->
+                    <div class="mb-3 text-start">
+                        <label for="idPelangganSelect" class="form-label fw-bold">Pilih Akun Pembeli</label>
+                        <div class="input-group">
+                            <select name="idPelanggan" id="idPelangganSelect" class="form-select form-select-lg" required>
+                                <option value="" disabled selected>-- Pilih Akun Pelanggan --</option>
+                                {% for p in pelanggan_list %}
+                                    <option value="{{ p.idPelanggan }}">{{ p.namaPelanggan }} (HP: {{ p.noHp }})</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-brand-accent touch-btn" data-bs-toggle="modal" data-bs-target="#modalTambahPelangganCepat" style="border-radius: 0 8px 8px 0;" title="Tambah Pelanggan Cepat">
+                                <i class="fa-solid fa-plus fs-5"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted"><i class="fa-solid fa-circle-question"></i> Pelanggan tidak ada? Klik tombol <strong>+</strong> untuk mendaftarkan pelanggan secara cepat.</small>
+                    </div>
+                    
+                    <!-- Metode Pembayaran -->
+                    <div class="mb-3 text-start">
+                        <label for="metodeBayar" class="form-label fw-bold">Metode Pembayaran</label>
+                        <select name="metodeBayar" id="metodeBayar" class="form-select form-select-lg" required>
+                            <option value="COD" selected>Bayar di Tempat (COD)</option>
+                            <option value="Transfer Bank BRI">Transfer Bank BRI</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Status Awal Pesanan -->
+                    <div class="mb-3 text-start">
+                        <label for="statusPembelian" class="form-label fw-bold">Status Awal Pesanan</label>
+                        <select name="statusPembelian" id="statusPembelian" class="form-select form-select-lg" required>
+                            <option value="Menunggu" selected>Menunggu Pembayaran</option>
+                            <option value="Diproses">Diproses</option>
+                            <option value="Selesai">Selesai</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Alamat Rumah -->
+                    <div class="mb-3 text-start">
+                        <label for="alamatPengiriman" class="form-label fw-bold">Alamat Pengiriman Paket</label>
+                        <textarea class="form-control" id="alamatPengiriman" name="alamatPengiriman" rows="3" required placeholder="Tulis alamat kirim yang lengkap..."></textarea>
+                    </div>
+                    
+                    <!-- Upload Struk/Bukti Transfer -->
+                    <div class="mb-3 text-start">
+                        <label for="buktiBayar" class="form-label fw-bold">Bukti Transfer (Hanya jika transfer BRI)</label>
+                        <input type="file" class="form-control form-control-lg" id="buktiBayar" name="buktiBayar" accept="image/*">
+                    </div>
+                    
+                </div>
+                <div class="modal-footer bg-light p-3">
+                    <button type="button" class="btn btn-secondary touch-btn px-4" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-brand-success touch-btn px-4"><i class="fa-solid fa-circle-check me-1"></i> Buat Pesanan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function konfirmasiHapusPembelian(id) {
+        Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: 'Pesanan ID #' + id + ' akan dihapus secara permanen dari database.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('formHapusPembelian' + id).submit();
+            }
+        });
+    }
+</script>
+
+<!-- MODAL PREVIEW BUKTI BAYAR -->
+<div class="modal fade" id="modalBuktiBayar" tabindex="-1" aria-labelledby="modalBuktiBayarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4">
+            <div class="modal-header bg-dark text-white rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold" id="modalBuktiBayarLabel"><i class="fa-solid fa-receipt me-2"></i> Foto Bukti Pembayaran</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-3">
+                <img id="fullGambarBukti" src="" class="img-fluid rounded-3 shadow" style="max-height: 75vh;" alt="Bukti Pembayaran">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL TAMBAH PELANGGAN CEPAT (NESTED DARI BUAT PESANAN) -->
+<div class="modal fade" id="modalTambahPelangganCepat" tabindex="-1" aria-labelledby="labelModalTambahPelangganCepat" aria-hidden="true" style="z-index: 1065;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-brand-accent text-white rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold" id="labelModalTambahPelangganCepat"><i class="fa-solid fa-user-plus me-2"></i> Tambah Pelanggan Cepat</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formTambahPelangganCepat" action="{% url 'karyawan_pelanggan_create_cepat' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4 text-start">
+                    
+                    <!-- Nama Lengkap -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nama Lengkap</label>
+                        <input type="text" class="form-control form-control-lg" name="namaPelanggan" required placeholder="Contoh: Rian Hidayat">
+                    </div>
+                    
+                    <!-- Username -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Username Login</label>
+                        <input type="text" class="form-control form-control-lg" name="username" required placeholder="Contoh: rian123">
+                    </div>
+                    
+                    <!-- Password -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Kata Sandi (Password)</label>
+                        <input type="password" class="form-control form-control-lg" name="password" required placeholder="Ketik kata sandi login...">
+                    </div>
+                    
+                    <!-- Nomor HP -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nomor Handphone (HP)</label>
+                        <input type="tel" class="form-control form-control-lg" name="noHp" required placeholder="Contoh: 08123456789" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    </div>
+                    
+                    <!-- Alamat -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Alamat Rumah Lengkap</label>
+                        <textarea class="form-control form-control-lg" name="alamat" rows="2" required placeholder="Tulis alamat rumah..."></textarea>
+                    </div>
+                    
+                </div>
+                <div class="modal-footer bg-light p-3">
+                    <button type="button" class="btn btn-secondary touch-btn px-4" data-bs-target="#modalTambahPembelian" data-bs-toggle="modal">Batal</button>
+                    <button type="submit" class="btn btn-brand-accent touch-btn px-4"><i class="fa-solid fa-circle-check me-1"></i> Simpan Pelanggan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // ======================================================
+        // PREVIEW BUKTI BAYAR LOGIC
+        // ======================================================
+        const triggers = document.querySelectorAll('.img-preview-trigger');
+        const fullImg = document.getElementById('fullGambarBukti');
+        const modalEl = document.getElementById('modalBuktiBayar');
+        const modal = new bootstrap.Modal(modalEl);
+        
+        triggers.forEach(trigger => {
+            trigger.addEventListener('click', function() {
+                const url = this.getAttribute('data-url');
+                fullImg.setAttribute('src', url);
+                modal.show();
+            });
+        });
+
+        // ======================================================
+        // TAMBAH PELANGGAN CEPAT (AJAX FETCH POST -> HTML OPTION)
+        // ======================================================
+        const formCepat = document.getElementById('formTambahPelangganCepat');
+        if (formCepat) {
+            formCepat.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(formCepat);
+                
+                fetch(formCepat.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    }
+                    throw new Error('Gagal menyimpan. Periksa apakah Username atau No HP sudah terdaftar.');
+                })
+                .then(html => {
+                    const selectPelanggan = document.getElementById('idPelangganSelect');
+                    
+                    // Parse string HTML option ke element
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html.trim();
+                    const newOption = tempDiv.firstChild;
+                    
+                    // Masukkan ke dropdown select
+                    selectPelanggan.appendChild(newOption);
+                    selectPelanggan.value = newOption.value;
+                    
+                    // Tutup modal pelanggan cepat
+                    const modalCepatEl = document.getElementById('modalTambahPelangganCepat');
+                    const modalCepat = bootstrap.Modal.getInstance(modalCepatEl) || new bootstrap.Modal(modalCepatEl);
+                    modalCepat.hide();
+                    
+                    // Tampilkan kembali modal buat pesanan utama
+                    const modalUtamaEl = document.getElementById('modalTambahPembelian');
+                    const modalUtama = bootstrap.Modal.getInstance(modalUtamaEl) || new bootstrap.Modal(modalUtamaEl);
+                    modalUtama.show();
+                    
+                    // Reset Form
+                    formCepat.reset();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Sukses',
+                        text: 'Pelanggan baru berhasil ditambahkan dan langsung terpilih!',
+                        confirmButtonColor: '#81C408'
+                    });
+                })
+                .catch(err => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Menambahkan',
+                        text: err.message,
+                        confirmButtonColor: '#81C408'
+                    });
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

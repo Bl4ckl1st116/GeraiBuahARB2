@@ -1,0 +1,270 @@
+{% extends 'core/karyawan/base.html' %}
+{% load humanize %}
+
+{% block title %}Kelola Akun Pelanggan{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-12 col-md-6 mb-3 mb-md-0">
+        <h3 class="fw-bold m-0"><i class="fa-solid fa-users text-success me-2"></i> Daftar Akun Pelanggan</h3>
+        <p class="text-muted m-0 fs-6">Kelola data login pelanggan, alamat pengiriman, dan nomor kontak aktif.</p>
+    </div>
+    <div class="col-12 col-md-6 text-md-end">
+        <button type="button" class="btn btn-brand-success btn-lg touch-btn shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahPelanggan" style="padding: 14px 28px; border-radius: 12px;">
+            <i class="fa-solid fa-user-plus me-2"></i> Tambah Pelanggan Baru
+        </button>
+    </div>
+</div>
+
+<!-- Form Pencarian & Pengaturan Tampilan -->
+<div class="row mb-4 g-2 align-items-center justify-content-between">
+    <!-- Kolom Pencarian -->
+    <div class="col-12 col-md-6">
+        <form method="GET" action="" class="d-flex gap-2">
+            {% if limit %}
+                <input type="hidden" name="limit" value="{{ limit }}">
+            {% endif %}
+            <input type="text" name="q" value="{{ q }}" class="form-control form-control-lg" placeholder="Cari nama, no HP, atau username..." style="border-radius: 10px;">
+            <button type="submit" class="btn btn-brand-success touch-btn px-4 shadow-sm" style="border-radius: 10px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            {% if q %}
+                <a href="?limit={{ limit }}" class="btn btn-secondary touch-btn px-3 d-flex align-items-center" style="border-radius: 10px;">
+                    <i class="fa-solid fa-arrow-rotate-right"></i>
+                </a>
+            {% endif %}
+        </form>
+    </div>
+    <!-- Kolom Dropdown Tampilan -->
+    <div class="col-12 col-md-3 text-md-end">
+        <form method="GET" action="" class="d-inline-flex align-items-center gap-2">
+            {% if q %}
+                <input type="hidden" name="q" value="{{ q }}">
+            {% endif %}
+            <label for="limit" class="text-nowrap fw-bold text-muted small m-0">Tampilkan:</label>
+            <select name="limit" id="limit" class="form-select" onchange="this.form.submit()" style="border-radius: 8px; width: auto; min-height: 44px;">
+                <option value="10" {% if limit == '10' %}selected{% endif %}>10 Baris</option>
+                <option value="20" {% if limit == '20' %}selected{% endif %}>20 Baris</option>
+                <option value="all" {% if limit == 'all' %}selected{% endif %}>Semua</option>
+            </select>
+        </form>
+    </div>
+</div>
+
+<!-- Tabel Pelanggan -->
+<div class="card shadow-sm border-0 rounded-4 p-3">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col" style="width: 25%">Nama Pelanggan</th>
+                    <th scope="col" style="width: 20%">Username</th>
+                    <th scope="col" style="width: 15%">Nomor HP</th>
+                    <th scope="col" style="width: 25%">Alamat Rumah</th>
+                    <th scope="col" style="width: 15%" class="text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if pelanggan_items %}
+                    {% for p in pelanggan_items %}
+                        <tr>
+                            <td><strong>{{ p.namaPelanggan }}</strong></td>
+                            <td><code class="fs-6 text-dark">{{ p.username }}</code></td>
+                            <td>{{ p.noHp }}</td>
+                            <td>{{ p.alamat }}</td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-2">
+                                    <!-- Edit Button -->
+                                    <button type="button" class="btn btn-warning text-white touch-btn px-3" data-bs-toggle="modal" data-bs-target="#modalEditPelanggan{{ p.idPelanggan }}" title="Ubah Data">
+                                        <i class="fa-solid fa-pen-to-square"></i> <span class="d-none d-sm-inline ms-1">Ubah</span>
+                                    </button>
+                                    
+                                    <!-- Delete Button -->
+                                    <button type="button" class="btn btn-danger touch-btn px-3" onclick="konfirmasiHapusPelanggan('{{ p.idPelanggan }}', '{{ p.namaPelanggan }}')" title="Hapus Akun">
+                                        <i class="fa-solid fa-trash"></i> <span class="d-none d-sm-inline ms-1">Hapus</span>
+                                    </button>
+                                    <form id="formHapusPelanggan{{ p.idPelanggan }}" action="{% url 'karyawan_pelanggan_delete' p.idPelanggan %}" method="POST" style="display: none;">
+                                        {% csrf_token %}
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- MODAL EDIT PELANGGAN -->
+                        <div class="modal fade" id="modalEditPelanggan{{ p.idPelanggan }}" tabindex="-1" aria-labelledby="labelModalEditPelanggan{{ p.idPelanggan }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content rounded-4 border-0 shadow-lg">
+                                    <div class="modal-header bg-warning text-white rounded-top-4 py-3">
+                                        <h5 class="modal-title fw-bold" id="labelModalEditPelanggan{{ p.idPelanggan }}"><i class="fa-solid fa-user-pen me-2"></i> Ubah Data Pelanggan</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form action="{% url 'karyawan_pelanggan_update' p.idPelanggan %}" method="POST">
+                                        {% csrf_token %}
+                                        <div class="modal-body p-4">
+                                            
+                                            <!-- Nama Lengkap -->
+                                            <div class="mb-3">
+                                                <label for="editNamaPelanggan{{ p.idPelanggan }}" class="form-label fw-bold">Nama Lengkap</label>
+                                                <input type="text" class="form-control form-control-lg" id="editNamaPelanggan{{ p.idPelanggan }}" name="namaPelanggan" value="{{ p.namaPelanggan }}" required placeholder="Contoh: Rian Hidayat">
+                                            </div>
+                                            
+                                            <!-- Username -->
+                                            <div class="mb-3">
+                                                <label for="editUsername{{ p.idPelanggan }}" class="form-label fw-bold">Username Login</label>
+                                                <input type="text" class="form-control form-control-lg" id="editUsername{{ p.idPelanggan }}" name="username" value="{{ p.username }}" required placeholder="Contoh: rian123">
+                                            </div>
+                                            
+                                            <!-- Password Baru -->
+                                            <div class="mb-3">
+                                                <label for="editPassword{{ p.idPelanggan }}" class="form-label fw-bold">Kata Sandi Baru (Biarkan kosong jika tidak diganti)</label>
+                                                <input type="password" class="form-control form-control-lg" id="editPassword{{ p.idPelanggan }}" name="password" placeholder="Ketik sandi baru...">
+                                            </div>
+                                            
+                                            <!-- Nomor HP -->
+                                            <div class="mb-3">
+                                                <label for="editNoHp{{ p.idPelanggan }}" class="form-label fw-bold">Nomor Handphone (HP)</label>
+                                                <input type="tel" class="form-control form-control-lg" id="editNoHp{{ p.idPelanggan }}" name="noHp" value="{{ p.noHp }}" required placeholder="Contoh: 08123456789" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                            </div>
+                                            
+                                            <!-- Alamat -->
+                                            <div class="mb-3">
+                                                <label for="editAlamat{{ p.idPelanggan }}" class="form-label fw-bold">Alamat Pengiriman</label>
+                                                <textarea class="form-control" id="editAlamat{{ p.idPelanggan }}" name="alamat" rows="3" required placeholder="Tulis alamat rumah lengkap...">{{ p.alamat }}</textarea>
+                                            </div>
+                                            
+                                        </div>
+                                        <div class="modal-footer bg-light p-3">
+                                            <button type="button" class="btn btn-secondary touch-btn px-4" data-bs-dismiss="modal">Batal</button>
+                                            <button type="submit" class="btn btn-warning text-white touch-btn px-4"><i class="fa-solid fa-save me-1"></i> Simpan Perubahan</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            <i class="fa-solid fa-folder-open fs-3 d-block mb-2"></i>
+                            Tidak ada data pelanggan yang terdaftar. Klik "Tambah Pelanggan Baru".
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if limit != 'all' and pelanggan_items.has_other_pages %}
+    <nav class="d-flex justify-content-center mt-4">
+        <ul class="pagination shadow-sm">
+            {% if pelanggan_items.has_previous %}
+                <li class="page-item">
+                    <a class="page-link touch-btn text-success" href="?q={{ q }}&limit={{ limit }}&page={{ pelanggan_items.previous_page_number }}">&laquo; Sebelum</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link touch-btn">&laquo; Sebelum</span>
+                </li>
+            {% endif %}
+            
+            {% for num in pelanggan_items.paginator.page_range %}
+                {% if pelanggan_items.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link touch-btn bg-brand-success border-brand-success text-white">{{ num }}</span>
+                    </li>
+                {% else %}
+                    <li class="page-item">
+                        <a class="page-link touch-btn text-success" href="?q={{ q }}&limit={{ limit }}&page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pelanggan_items.has_next %}
+                <li class="page-item">
+                    <a class="page-link touch-btn text-success" href="?q={{ q }}&limit={{ limit }}&page={{ pelanggan_items.next_page_number }}">Berikut &raquo;</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link touch-btn">Berikut &raquo;</span>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- MODAL TAMBAH PELANGGAN BARU -->
+<div class="modal fade" id="modalTambahPelanggan" tabindex="-1" aria-labelledby="labelModalTambahPelanggan" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-brand-success text-white rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold" id="labelModalTambahPelanggan"><i class="fa-solid fa-user-plus me-2"></i> Tambah Pelanggan Baru</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'karyawan_pelanggan_create' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    
+                    <!-- Nama Lengkap -->
+                    <div class="mb-3">
+                        <label for="namaPelanggan" class="form-label fw-bold">Nama Lengkap</label>
+                        <input type="text" class="form-control form-control-lg" id="namaPelanggan" name="namaPelanggan" required placeholder="Contoh: Rian Hidayat">
+                    </div>
+                    
+                    <!-- Username -->
+                    <div class="mb-3">
+                        <label for="username" class="form-label fw-bold">Username Login</label>
+                        <input type="text" class="form-control form-control-lg" id="username" name="username" required placeholder="Contoh: rian123">
+                    </div>
+                    
+                    <!-- Password -->
+                    <div class="mb-3">
+                        <label for="password" class="form-label fw-bold">Kata Sandi (Password)</label>
+                        <input type="password" class="form-control form-control-lg" id="password" name="password" required placeholder="Ketik kata sandi login...">
+                    </div>
+                    
+                    <!-- Nomor HP -->
+                    <div class="mb-3">
+                        <label for="noHp" class="form-label fw-bold">Nomor Handphone (HP)</label>
+                        <input type="tel" class="form-control form-control-lg" id="noHp" name="noHp" required placeholder="Contoh: 08123456789" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    </div>
+                    
+                    <!-- Alamat -->
+                    <div class="mb-3">
+                        <label for="alamat" class="form-label fw-bold">Alamat Rumah Lengkap</label>
+                        <textarea class="form-control" id="alamat" name="alamat" rows="3" required placeholder="Tulis jalan, nomor rumah, RT/RW, dan kelurahan/kecamatan..."></textarea>
+                    </div>
+                    
+                </div>
+                <div class="modal-footer bg-light p-3">
+                    <button type="button" class="btn btn-secondary touch-btn px-4" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-brand-success touch-btn px-4"><i class="fa-solid fa-circle-check me-1"></i> Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function konfirmasiHapusPelanggan(id, nama) {
+        Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: 'Akun pelanggan "' + nama + '" akan dihapus secara permanen dari database.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('formHapusPelanggan' + id).submit();
+            }
+        });
+    }
+</script>
+{% endblock %}

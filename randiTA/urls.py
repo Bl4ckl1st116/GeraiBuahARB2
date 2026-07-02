@@ -7,7 +7,7 @@ urlpatterns = [
     # CRITICAL: Report URLs MUST come BEFORE admin.site.urls
     # to prevent Django admin from catching these URLs first
     path('admin/laporan/', include('core.report_urls')),
-    
+    path('karyawan/', include('core.karyawan_urls')),
     path("admin/", admin.site.urls),
     path("", include("core.urls")),
 ]

@@ -1,0 +1,63 @@
+{% extends 'core/karyawan/base.html' %}
+
+{% block title %}Login Karyawan{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+        <div class="card shadow-lg border-0 rounded-4 p-4">
+            <div class="card-body text-center">
+                
+                <!-- Logo/Ikon -->
+                <div class="mb-4">
+                    <div class="bg-brand-success d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 80px; height: 80px;">
+                        <i class="fa-solid fa-user-tie fs-1 text-white"></i>
+                    </div>
+                </div>
+                
+                <h3 class="fw-bold mb-1">Masuk Portal Karyawan</h3>
+                <p class="text-muted mb-4 fs-6">Silakan ketik Nomor HP dan Password Anda</p>
+                
+                <form action="{% url 'karyawan_login' %}" method="POST">
+                    {% csrf_token %}
+                    
+                    <!-- Input Nomor HP -->
+                    <div class="mb-3 text-start">
+                        <label for="noHp" class="form-label fw-bold text-secondary">Nomor Handphone (HP)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-secondary"><i class="fa-solid fa-phone fs-5"></i></span>
+                            <input type="tel" name="noHp" id="noHp" class="form-control form-control-lg border-start-0" 
+                                   placeholder="Contoh: 08123456789" required style="font-size: 1.1rem; height: 55px;"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                        </div>
+                    </div>
+                    
+                    <!-- Input Password -->
+                    <div class="mb-4 text-start">
+                        <label for="password" class="form-label fw-bold text-secondary">Kata Sandi (Password)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-secondary"><i class="fa-solid fa-lock fs-5"></i></span>
+                            <input type="password" name="password" id="password" class="form-control form-control-lg border-start-0" 
+                                   placeholder="Ketik password di sini..." required style="font-size: 1.1rem; height: 55px;">
+                        </div>
+                    </div>
+                    
+                    <!-- Tombol Masuk -->
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-brand-success btn-lg touch-btn shadow-sm" style="height: 55px; font-size: 1.15rem; font-weight: 600;">
+                            <i class="fa-solid fa-right-to-bracket me-2"></i> Masuk Sekarang
+                        </button>
+                    </div>
+                    
+                </form>
+                
+                <!-- Bantuan -->
+                <div class="text-muted mt-4 fs-7 border-top pt-3">
+                    <i class="fa-solid fa-circle-info"></i> Lupa password? Hubungi Admin untuk reset password Anda.
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -6,14 +6,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 # Create your models here.
 
-# class Admin(models.Model):
-#     idAdmin = models.AutoField(primary_key=True)
-#     username = models.CharField(max_length=30, unique=True)
-#     password = models.CharField(max_length=30)
-#     namaAdmin = models.CharField(max_length=70)
 
-#     def __str__(self):
-#         return f"{self.namaAdmin} - {self.username}"
 
 class Pelanggan(models.Model):
     idPelanggan = models.AutoField(primary_key=True)
@@ -266,3 +259,48 @@ def pembatalan_pembelian(sender, instance, **kwargs):
                 batch.save()
 
         instance.stok_dikembalikan = True
+
+
+class Karyawan(models.Model):
+    idKaryawan = models.AutoField(primary_key=True)
+    namaKaryawan = models.CharField(max_length=70)
+    noHp = models.CharField(max_length=12, unique=True)
+    password = models.CharField(max_length=128)
+
+    class Meta:
+        verbose_name_plural = "Karyawan"
+
+    def __str__(self):
+        return f"{self.namaKaryawan} - {self.noHp}"
+
+    def save(self, *args, **kwargs):
+        from django.contrib.auth.hashers import make_password
+        if self.password and not self.password.startswith(('pbkdf2_sha256$', 'bcrypt$', 'argon2$')):
+            self.password = make_password(self.password)
+        super().save(*args, **kwargs)
+
+
+class LogAktivitasKaryawan(models.Model):
+    AKSI_CHOICES = [
+        ('CREATE', 'CREATE'),
+        ('UPDATE', 'UPDATE'),
+        ('DELETE', 'DELETE'),
+    ]
+    TARGET_MODEL_CHOICES = [
+        ('Buah', 'Buah'),
+        ('Pembelian', 'Pembelian'),
+        ('Pelanggan', 'Pelanggan'),
+    ]
+    idLog = models.AutoField(primary_key=True)
+    idKaryawan = models.ForeignKey(Karyawan, on_delete=models.CASCADE)
+    aksi = models.CharField(max_length=10, choices=AKSI_CHOICES)
+    target_model = models.CharField(max_length=20, choices=TARGET_MODEL_CHOICES)
+    target_id = models.IntegerField()
+    deskripsi = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Log Aktivitas Karyawan"
+
+    def __str__(self):
+        return f"{self.timestamp} - {self.idKaryawan.namaKaryawan} - {self.aksi} {self.target_model} ({self.target_id})"
