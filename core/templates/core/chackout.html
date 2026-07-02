@@ -46,6 +46,12 @@
                             <h3 class="mb-1">0011-01-234567-50-1</h3>
                             <p class="mb-0">a/n <strong>Gerai Buah ARB</strong></p>
                         </div>
+                        {% if profil_toko.qris_image %}
+                        <div class="text-center my-3 p-3 bg-white border rounded">
+                            <p class="mb-2 text-dark fw-bold">Atau Scan QRIS di bawah ini:</p>
+                            <img src="{{ profil_toko.qris_image.url }}" class="img-fluid rounded border shadow-sm" alt="QRIS {{ profil_toko.nama_toko }}" style="max-height: 250px;">
+                        </div>
+                        {% endif %}
                         <div class="form-item">
                             <label class="form-label mb-2">Upload Bukti Transfer<sup>*</sup></label>
                             <input type="file" name="buktiBayar" id="buktiBayarInput" class="form-control" required>

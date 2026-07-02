@@ -312,6 +312,7 @@ class ProfilToko(models.Model):
     telepon = models.CharField(max_length=20)
     footer_pesan = models.TextField()
     logo_struk = models.ImageField(upload_to='logo_struk/', null=True, blank=True)
+    qris_image = models.ImageField(upload_to='qris/', null=True, blank=True)
 
     class Meta:
         verbose_name_plural = "Profil Toko"

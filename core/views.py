@@ -6,7 +6,7 @@ from django.contrib.humanize.templatetags.humanize import intcomma
 from datetime import datetime
 
 # Create your views here.
-from .models import Buah, Pelanggan, Pembelian, DetailPembelian, Pemasok, Pengadaan, DetailPengadaan
+from .models import Buah, Pelanggan, Pembelian, DetailPembelian, Pemasok, Pengadaan, DetailPengadaan, ProfilToko
 from .utils.pdf import generate_pdf
 
 
@@ -278,10 +278,12 @@ def checkout(request):
         messages.success(request, 'Order berhasil dibuat')
         return redirect('shop-detail')
 
+    profil_toko, _ = ProfilToko.objects.get_or_create(pk=1, defaults={'nama_toko': 'GERAI BUAH ARB'})
     context = {
         'cart_items': items,
         'cart_total': total,
         'pelanggan': pelanggan,
+        'profil_toko': profil_toko,
     }
     return render(request, 'core/chackout.html', context)
 
