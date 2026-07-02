@@ -114,6 +114,11 @@
                                     <button type="button" class="btn btn-danger touch-btn px-2" onclick="konfirmasiHapusPembelian('{{ item.idPembelian }}')" title="Hapus Transaksi">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
+                                    
+                                    <!-- Cetak Struk Button -->
+                                    <button type="button" class="btn btn-info text-white touch-btn px-2" onclick="bukaModalCetak('{{ item.idPembelian }}')" title="Cetak Struk">
+                                        <i class="fa-solid fa-print"></i>
+                                    </button>
                                     <form id="formHapusPembelian{{ item.idPembelian }}" action="{% url 'karyawan_pembelian_delete' item.idPembelian %}" method="POST" style="display: none;">
                                         {% csrf_token %}
                                     </form>
@@ -543,6 +548,176 @@
                     Swal.fire({
                         icon: 'error',
                         title: 'Gagal Menambahkan',
+                        text: err.message,
+                        confirmButtonColor: '#81C408'
+                    });
+                });
+            });
+        }
+    });
+</script>
+
+<!-- MODAL CETAK STRUK BLUETOOTH -->
+<div class="modal fade" id="modalCetakStruk" tabindex="-1" aria-labelledby="modalCetakStrukLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-info text-white rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold" id="modalCetakStrukLabel"><i class="fa-solid fa-print me-2"></i> Pengaturan Cetak Struk</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formCetakStruk">
+                <div class="modal-body p-4 text-start">
+                    <!-- Nama Toko -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nama Toko</label>
+                        <input type="text" class="form-control form-control-lg" id="printNamaToko" value="{{ profil_toko.nama_toko|default:'GERAI BUAH ARB' }}" required>
+                    </div>
+                    
+                    <!-- Alamat Toko -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Alamat Toko</label>
+                        <textarea class="form-control" id="printAlamat" rows="2" required>{{ profil_toko.alamat }}</textarea>
+                    </div>
+                    
+                    <!-- Telepon -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">No. Telepon</label>
+                        <input type="text" class="form-control form-control-lg" id="printTelepon" value="{{ profil_toko.telepon }}" required>
+                    </div>
+                    
+                    <!-- Header Kasir -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nama Kasir (Header)</label>
+                        <input type="text" class="form-control form-control-lg" id="printKasir" value="KK KARTINI TARIGAN" required>
+                    </div>
+                    
+                    <!-- Footer Pesan -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Pesan Kaki (Footer)</label>
+                        <textarea class="form-control" id="printFooter" rows="2" required>{{ profil_toko.footer_pesan }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light p-3">
+                    <button type="button" class="btn btn-secondary touch-btn px-4" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-info text-white touch-btn px-4"><i class="fa-solid fa-print me-1"></i> Mulai Cetak</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let activePembelianId = null;
+
+    function bukaModalCetak(id) {
+        activePembelianId = id;
+        const modalEl = document.getElementById('modalCetakStruk');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const formCetak = document.getElementById('formCetakStruk');
+        if (formCetak) {
+            formCetak.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (!activePembelianId) return;
+
+                Swal.fire({
+                    title: 'Menyiapkan Struk...',
+                    text: 'Mengambil data transaksi dari server...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                fetch(`/karyawan/pembelian/detail-struk/${activePembelianId}/`)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Gagal mengambil detail transaksi.');
+                })
+                .then(data => {
+                    Swal.close();
+
+                    const namaToko = document.getElementById('printNamaToko').value.toUpperCase();
+                    const alamat = document.getElementById('printAlamat').value;
+                    const telepon = document.getElementById('printTelepon').value;
+                    const kasir = document.getElementById('printKasir').value.toUpperCase();
+                    const footer = document.getElementById('printFooter').value;
+
+                    function alignLeftRight(left, right, maxLen = 32) {
+                        left = String(left);
+                        right = String(right);
+                        let spaces = maxLen - (left.length + right.length);
+                        if (spaces < 1) spaces = 1;
+                        return left + " ".repeat(spaces) + right;
+                    }
+
+                    function alignCenter(text, maxLen = 32) {
+                        text = String(text);
+                        if (text.length >= maxLen) return text.substring(0, maxLen);
+                        let leftSpaces = Math.floor((maxLen - text.length) / 2);
+                        return " ".repeat(leftSpaces) + text;
+                    }
+
+                    let divider = "-".repeat(32) + "\n";
+                    let receipt = "";
+
+                    // Logo RawBT
+                    if (data.logo_url) {
+                        receipt += "<img>" + data.logo_url + "</img>\n";
+                    }
+
+                    // Header
+                    receipt += alignCenter(namaToko) + "\n";
+                    receipt += alignCenter(alamat) + "\n";
+                    receipt += alignCenter("Telp: " + telepon) + "\n";
+                    receipt += divider;
+
+                    // Info Transaksi
+                    receipt += alignLeftRight("ID Trans:", "#" + data.id_pembelian) + "\n";
+                    receipt += alignLeftRight("Pelanggan:", data.nama_pelanggan) + "\n";
+                    receipt += alignLeftRight("Kasir:", kasir) + "\n";
+                    receipt += alignLeftRight("Waktu:", data.waktu_pembelian) + "\n";
+                    receipt += divider;
+
+                    // Items List
+                    data.items.forEach(item => {
+                        receipt += item.nama + "\n";
+                        let qtyStr = `  ${item.qty} kg x Rp ${item.harga.toLocaleString('id-ID')}rb`;
+                        let subStr = `Rp ${item.subtotal.toLocaleString('id-ID')}rb`;
+                        receipt += alignLeftRight(qtyStr, subStr) + "\n";
+                    });
+                    receipt += divider;
+
+                    // Total
+                    let totalLabel = "TOTAL BAYAR:";
+                    let totalValue = `Rp ${data.total_harga.toLocaleString('id-ID')}  ribu`;
+                    receipt += alignLeftRight(totalLabel, totalValue) + "\n";
+                    receipt += divider;
+
+                    // Footer Message
+                    footer.split('\n').forEach(line => {
+                        if (line.trim()) {
+                            receipt += alignCenter(line.trim()) + "\n";
+                        }
+                    });
+                    receipt += "\n\n";
+
+                    const modalCetakEl = document.getElementById('modalCetakStruk');
+                    const modalCetak = bootstrap.Modal.getInstance(modalCetakEl);
+                    if (modalCetak) modalCetak.hide();
+
+                    let intentUrl = "intent:" + encodeURIComponent(receipt) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+                    window.location.href = intentUrl;
+                })
+                .catch(err => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
                         text: err.message,
                         confirmButtonColor: '#81C408'
                     });

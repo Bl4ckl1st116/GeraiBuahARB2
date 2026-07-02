@@ -6,9 +6,11 @@ from django.db import transaction
 from functools import wraps
 from datetime import datetime
 
+from django.http import JsonResponse
 from .models import (
     Buah, Pelanggan, Pembelian, DetailPembelian,
-    Pemasok, Pengadaan, DetailPengadaan, Karyawan, LogAktivitasKaryawan
+    Pemasok, Pengadaan, DetailPengadaan, Karyawan, LogAktivitasKaryawan,
+    ProfilToko
 )
 
 
@@ -399,12 +401,73 @@ def pembelian_list(request):
         page_number = request.GET.get('page')
         pembelian_items = paginator.get_page(page_number)
 
+    profil_toko, created = ProfilToko.objects.get_or_create(pk=1, defaults={'nama_toko': 'GERAI BUAH ARB'})
+
     return render(request, 'core/karyawan/pembelian_list.html', {
         'pembelian_items': pembelian_items,
         'pelanggan_list': pelanggan_list,
         'buah_list': buah_list,
         'q': q,
-        'limit': limit
+        'limit': limit,
+        'profil_toko': profil_toko
+    })
+
+
+@karyawan_required
+def get_detail_struk(request, id_pembelian):
+    pembelian = get_object_or_404(Pembelian, idPembelian=id_pembelian)
+    items = []
+    for det in pembelian.detailpembelian_set.all():
+        items.append({
+            'nama': det.idBuah.namaBuah,
+            'qty': float(det.kuantitas),
+            'harga': float(det.idBuah.hargaBuah),
+            'subtotal': float(det.subHarga)
+        })
+    
+    # logo url
+    logo_url = ""
+    profil_toko, created = ProfilToko.objects.get_or_create(pk=1, defaults={'nama_toko': 'GERAI BUAH ARB'})
+    if profil_toko.logo_struk:
+        logo_url = request.build_absolute_uri(profil_toko.logo_struk.url)
+
+    data = {
+        'id_pembelian': pembelian.idPembelian,
+        'nama_pelanggan': pembelian.idPelanggan.namaPelanggan,
+        'waktu_pembelian': pembelian.tanggalPembelian.strftime('%d-%m-%Y %H:%M'),
+        'items': items,
+        'total_harga': float(pembelian.totalHargaPembelian),
+        'logo_url': logo_url
+    }
+    return JsonResponse(data)
+
+
+def cetak_struk_print(request, id_pembelian):
+    is_karyawan = 'karyawan_id' in request.session
+    is_staff = request.user.is_authenticated and request.user.is_staff
+    if not (is_karyawan or is_staff):
+        messages.error(request, 'Akses ditolak.')
+        return redirect('karyawan_login')
+        
+    pembelian = get_object_or_404(Pembelian, idPembelian=id_pembelian)
+    profil_toko, created = ProfilToko.objects.get_or_create(pk=1, defaults={'nama_toko': 'GERAI BUAH ARB'})
+    
+    logo_url = None
+    if profil_toko.logo_struk:
+        logo_url = request.build_absolute_uri(profil_toko.logo_struk.url)
+        
+    kasir_nama = "KK KARTINI TARIGAN"
+    if is_karyawan:
+        kasir_nama = request.session.get('karyawan_nama', kasir_nama)
+    elif is_staff:
+        kasir_nama = request.user.get_full_name() or request.user.username
+        
+    return render(request, 'core/karyawan/struk_print.html', {
+        'pembelian': pembelian,
+        'profil_toko': profil_toko,
+        'logo_url': logo_url,
+        'kasir_nama': kasir_nama,
+        'current_time': datetime.now().strftime('%d-%m-%Y %H:%M')
     })
 
 

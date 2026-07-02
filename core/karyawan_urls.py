@@ -28,4 +28,8 @@ urlpatterns = [
     # Detail Pembelian (Item)
     path('pembelian/tambah-item/<int:id_pembelian>/', karyawan_views.tambah_detail_pembelian, name='karyawan_tambah_detail'),
     path('pembelian/hapus-item/<int:id_detail>/', karyawan_views.hapus_detail_pembelian, name='karyawan_hapus_detail'),
+    
+    # Cetak Struk
+    path('pembelian/detail-struk/<int:id_pembelian>/', karyawan_views.get_detail_struk, name='karyawan_detail_struk'),
+    path('pembelian/cetak-print/<int:id_pembelian>/', karyawan_views.cetak_struk_print, name='karyawan_cetak_print'),
 ]

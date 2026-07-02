@@ -304,3 +304,21 @@ class LogAktivitasKaryawan(models.Model):
 
     def __str__(self):
         return f"{self.timestamp} - {self.idKaryawan.namaKaryawan} - {self.aksi} {self.target_model} ({self.target_id})"
+
+
+class ProfilToko(models.Model):
+    nama_toko = models.CharField(max_length=100, default="GERAI BUAH ARB")
+    alamat = models.TextField()
+    telepon = models.CharField(max_length=20)
+    footer_pesan = models.TextField()
+    logo_struk = models.ImageField(upload_to='logo_struk/', null=True, blank=True)
+
+    class Meta:
+        verbose_name_plural = "Profil Toko"
+
+    def __str__(self):
+        return self.nama_toko
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)

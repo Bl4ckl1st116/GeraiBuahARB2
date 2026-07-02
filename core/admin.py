@@ -13,7 +13,8 @@ from .models import (
     Buah, Pelanggan,
     Pembelian, DetailPembelian,
     Pemasok, Pengadaan, DetailPengadaan,
-    Karyawan, LogAktivitasKaryawan
+    Karyawan, LogAktivitasKaryawan,
+    ProfilToko
 )
 from .utils.pdf import generate_pdf
 
@@ -111,8 +112,8 @@ class DetailPembelianInline(admin.TabularInline):
 @admin.register(Pembelian)
 class PembelianAdmin(admin.ModelAdmin):
     list_display = (
-        "nama_pelanggan", "totalBuah", "total_harga_rupiah",
-        "statusPembelian", "tanggalPembelian", "show_actions"
+        "idPembelian", "nama_pelanggan", "totalBuah", "total_harga_rupiah",
+        "statusPembelian", "tanggalPembelian", "cetak_struk_admin", "show_actions"
     )
     inlines = [DetailPembelianInline]
     list_filter = ("statusPembelian", "metodeBayar", ("tanggalPembelian", admin.DateFieldListFilter))
@@ -122,6 +123,16 @@ class PembelianAdmin(admin.ModelAdmin):
     def show_actions(self, obj):
         return get_show_actions(obj, 'pembelian')
     show_actions.short_description = "Aksi"
+
+    def cetak_struk_admin(self, obj):
+        from django.urls import reverse
+        from django.utils.html import format_html
+        url = reverse('karyawan_cetak_print', args=[obj.pk])
+        return format_html(
+            '<a href="{}" target="_blank" class="button" style="background: #17a2b8; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-weight: bold; white-space: nowrap;"><i class="fa fa-print"></i> Cetak</a>',
+            url
+        )
+    cetak_struk_admin.short_description = "Struk"
 
     def nama_pelanggan(self, obj):
         return obj.idPelanggan.namaPelanggan
@@ -331,3 +342,8 @@ class LogAktivitasKaryawanAdmin(admin.ModelAdmin):
             return f"{obj.deskripsi[:50]}..."
         return obj.deskripsi
     potong_deskripsi.short_description = 'Deskripsi Aktivitas'
+
+
+@admin.register(ProfilToko)
+class ProfilTokoAdmin(admin.ModelAdmin):
+    list_display = ('nama_toko', 'telepon', 'alamat', 'footer_pesan')
