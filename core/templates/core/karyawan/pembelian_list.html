@@ -245,17 +245,59 @@
                                                 <textarea class="form-control" id="editAlamatPengiriman{{ item.idPembelian }}" name="alamatPengiriman" rows="3" required placeholder="Tulis alamat kirim paket...">{{ item.alamatPengiriman }}</textarea>
                                             </div>
                                             
-                                            <!-- Upload Struk Baru -->
+                                             <!-- Upload Struk Baru -->
                                             <div class="mb-3 text-start">
                                                 <label for="editBuktiBayar{{ item.idPembelian }}" class="form-label fw-bold">Upload Struk Baru (Biarkan kosong jika tidak ada)</label>
                                                 <input type="file" class="form-control form-control-lg" id="editBuktiBayar{{ item.idPembelian }}" name="buktiBayar" accept="image/*">
                                             </div>
-                                            
+
+                                            <!-- ── Pengiriman ─────────────────────────────── -->
+                                            <hr class="my-3">
+                                            <p class="fw-bold text-success mb-2"><i class="fa-solid fa-truck me-1"></i> Info Pengiriman</p>
+                                            <small class="text-muted d-block mb-3">
+                                                <i class="fa-solid fa-circle-info me-1"></i>
+                                                Ongkos kirim <strong>dibayar cash langsung ke kurir</strong> oleh pelanggan, terpisah dari harga buah.
+                                            </small>
+
+                                            <!-- Jasa Kirim -->
+                                            <div class="mb-3 text-start">
+                                                <label for="editJasaKirim{{ item.idPembelian }}" class="form-label fw-bold">Jasa Pengiriman</label>
+                                                <select name="jasa_kirim" id="editJasaKirim{{ item.idPembelian }}" class="form-select form-select-lg">
+                                                    <option value="" {% if not item.jasa_kirim %}selected{% endif %}>Tidak Ada / Belum Ditentukan</option>
+                                                    <option value="Grab" {% if item.jasa_kirim == 'Grab' %}selected{% endif %}>Grab</option>
+                                                    <option value="Maxim" {% if item.jasa_kirim == 'Maxim' %}selected{% endif %}>Maxim</option>
+                                                    <option value="GoSend" {% if item.jasa_kirim == 'GoSend' %}selected{% endif %}>GoSend / Gojek</option>
+                                                    <option value="Lalamove" {% if item.jasa_kirim == 'Lalamove' %}selected{% endif %}>Lalamove</option>
+                                                    <option value="Kurir Sendiri" {% if item.jasa_kirim == 'Kurir Sendiri' %}selected{% endif %}>Kurir Sendiri</option>
+                                                    <option value="Ambil Sendiri" {% if item.jasa_kirim == 'Ambil Sendiri' %}selected{% endif %}>Ambil Sendiri</option>
+                                                    <option value="Lainnya" {% if item.jasa_kirim == 'Lainnya' %}selected{% endif %}>Lainnya</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Nama Kurir -->
+                                            <div class="mb-3 text-start">
+                                                <label for="editNamaKurir{{ item.idPembelian }}" class="form-label fw-bold">Nama Kurir <span class="text-muted fw-normal">(Opsional)</span></label>
+                                                <input type="text" class="form-control form-control-lg" id="editNamaKurir{{ item.idPembelian }}" name="nama_kurir" value="{{ item.nama_kurir }}" placeholder="Contoh: Budi / 081234567890">
+                                            </div>
+
+                                            <!-- Ongkos Kirim -->
+                                            <div class="mb-1 text-start">
+                                                <label for="editOngkosKirim{{ item.idPembelian }}" class="form-label fw-bold">Ongkos Kirim (ribu rupiah)</label>
+                                                <div class="input-group input-group-lg">
+                                                    <span class="input-group-text">Rp</span>
+                                                    <input type="number" class="form-control" id="editOngkosKirim{{ item.idPembelian }}" name="ongkos_kirim" value="{{ item.ongkos_kirim }}" min="0" step="0.01" placeholder="0">
+                                                    <span class="input-group-text">ribu</span>
+                                                </div>
+                                                <small class="text-muted">Kosongkan atau isi 0 jika tidak ada ongkos kirim.</small>
+                                            </div>
+                                            <!-- ─────────────────────────────────────────────── -->
+
                                         </div>
                                         <div class="modal-footer bg-light p-3">
                                             <button type="button" class="btn btn-secondary touch-btn px-4" data-bs-dismiss="modal">Batal</button>
                                             <button type="submit" class="btn btn-warning text-white touch-btn px-4"><i class="fa-solid fa-save me-1"></i> Simpan Status</button>
                                         </div>
+
                                     </form>
                                 </div>
                             </div>

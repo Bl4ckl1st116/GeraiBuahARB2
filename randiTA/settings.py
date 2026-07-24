@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-s##p^gb@z=trpmhv5j%5oybhwb_mv*ui#u57ap(lsq8#yoqnot'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False 
+DEBUG = True 
 
 ALLOWED_HOSTS = [
     'GeraiBuahARB.pythonanywhere.com',
@@ -164,6 +164,8 @@ JAZZMIN_SETTINGS = {
         "core.Pemasok",   # Posisi 5
         "core.Pengadaan",     # Posisi 6
         "core.DetailPengadaan",     # Posisi 7
+        "core.ProdukOlahan",  # Posisi 8
+        "core.PenjualanOlahan", # Posisi 9
     ],
 
      "icons": {

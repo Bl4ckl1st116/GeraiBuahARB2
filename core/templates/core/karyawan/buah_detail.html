@@ -1,0 +1,287 @@
+{% extends 'core/karyawan/base.html' %}
+{% load humanize %}
+
+{% block title %}Detail Stok — {{ buah.namaBuah }}{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'karyawan_buah_list' %}" class="text-success">Daftar Buah</a></li>
+        <li class="breadcrumb-item active">{{ buah.namaBuah }}</li>
+    </ol>
+</nav>
+
+<!-- Info Buah -->
+<div class="card border-0 shadow-sm rounded-4 mb-4" style="font-family: 'Poppins', sans-serif;">
+    <div class="card-body p-4">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                {% if buah.fotoBuah %}
+                    <img src="{{ buah.fotoBuah.url }}" alt="{{ buah.namaBuah }}"
+                         class="rounded-3 shadow-sm" style="width:120px;height:120px;object-fit:cover;">
+                {% endif %}
+            </div>
+            <div class="col">
+                <h2 class="fw-bold mb-2">{{ buah.namaBuah }}</h2>
+                <p class="text-muted mb-3">{{ buah.deskripsiBuah }}</p>
+                <div class="d-flex flex-wrap gap-4">
+                    <span class="fs-6"><i class="fa-solid fa-tag text-success me-2"></i>
+                        <strong>Rp {{ buah.hargaBuah|intcomma }} ribu</strong> / kg
+                    </span>
+                    <span class="fs-6"><i class="fa-solid fa-clock text-info me-2"></i>
+                        Masa segar: <strong>{{ buah.lamaKesegaraan }} hari</strong>
+                    </span>
+                    <span class="fs-6"><i class="fa-solid fa-boxes-stacked text-warning me-2"></i>
+                        Stok jual (Segar+Menengah): <strong>{{ buah.stokBuah }} kg</strong>
+                    </span>
+                </div>
+            </div>
+            <!-- Ringkasan Grade -->
+            <div class="col-12 col-md-auto mt-4 mt-md-0">
+                <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                    {% with gr=buah.stokPerGrade %}
+                    <div class="text-center px-4 py-3 rounded-4 shadow-sm" style="background:#e6f9ee; min-width:110px;">
+                        <div class="fw-bold text-success fs-4">{{ gr.segar }}</div>
+                        <small class="text-muted fw-semibold">Segar</small>
+                    </div>
+                    <div class="text-center px-4 py-3 rounded-4 shadow-sm" style="background:#fff3e0; min-width:110px;">
+                        <div class="fw-bold text-warning fs-4">{{ gr.menengah }}</div>
+                        <small class="text-muted fw-semibold">Menengah</small>
+                    </div>
+                    <div class="text-center px-4 py-3 rounded-4 shadow-sm" style="background:#fdecea; min-width:110px;">
+                        <div class="fw-bold text-danger fs-4">{{ gr.hampir_rusak }}</div>
+                        <small class="text-muted fw-semibold">H.Rusak</small>
+                    </div>
+                    <div class="text-center px-4 py-3 rounded-4 shadow-sm border" style="background:#ffffff; min-width:110px;">
+                        <div class="fw-bold text-secondary fs-4">{{ gr.rusak }}</div>
+                        <small class="text-muted fw-semibold">Rusak</small>
+                    </div>
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4" style="font-family: 'Poppins', sans-serif;">
+    <h4 class="fw-bold m-0"><i class="fa-solid fa-layer-group me-2 text-primary"></i>Daftar Batch Pengadaan</h4>
+    <a href="{% url 'karyawan_buah_list' %}" class="btn btn-outline-secondary">
+        <i class="fa-solid fa-arrow-left me-2"></i>Kembali
+    </a>
+</div>
+
+<!-- Tabel Batch -->
+<div class="card border-0 shadow-sm rounded-4 mb-5" style="font-family: 'Poppins', sans-serif;">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="text-white text-center align-middle" style="background-color: #81C408 !important;">
+                <tr>
+                    <th class="ps-4 py-3 text-start">Batch Info</th>
+                    <th class="py-3">Segar</th>
+                    <th class="py-3">Menengah</th>
+                    <th class="py-3">H.Rusak</th>
+                    <th class="py-3">Rusak</th>
+                    <th class="py-3" style="width:120px;">Tindakan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in batch_data %}
+                {% with batch=item.batch %}
+                <tr class="{% if not batch.status %}table-secondary text-muted{% endif %}">
+                    <td class="ps-4">
+                        <div class="fw-bold">#{{ batch.idDetailPengadaan }} — {{ batch.tanggalMasuk|date:"d M Y" }}</div>
+                        <div class="small mt-1">
+                            <span class="badge {% if item.hari_berjalan >= buah.lamaKesegaraan %}bg-danger{% elif item.sisa_hari <= buah.lamaKesegaraan|floatformat:0|add:'0'|divisibleby:4 %}bg-warning text-dark{% else %}bg-light text-dark border{% endif %}">
+                                Usia: {{ item.hari_berjalan }} hari
+                            </span>
+                            {% if item.sisa_hari <= 0 %}
+                                <span class="badge bg-danger ms-1">Lewat {{ item.sisa_hari|cut:"-" }} hari</span>
+                            {% elif item.sisa_hari <= 3 %}
+                                <span class="badge bg-warning text-dark ms-1">{{ item.sisa_hari }} hari lagi</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark border ms-1">{{ item.sisa_hari }} hari lagi</span>
+                            {% endif %}
+                            <div class="mt-1 text-muted">Awal: {{ batch.kuantitas_awal }} kg | Total Sisa: <strong>{{ batch.kuantitas }} kg</strong></div>
+                        </div>
+                    </td>
+                    
+                    {% if batch.status %}
+                    <td colspan="4" class="p-0">
+                        <form action="{% url 'karyawan_update_qty' batch.idDetailPengadaan %}" method="POST" class="m-0 p-0 h-100">
+                            {% csrf_token %}
+                            <div class="d-flex w-100 h-100">
+                                <div class="flex-fill p-2 border-end text-center d-flex align-items-center justify-content-center">
+                                    <input type="number" name="qty_segar" class="form-control form-control-sm text-center fw-bold text-success" value="{{ batch.qty_segar }}" min="0" style="max-width:80px;">
+                                </div>
+                                <div class="flex-fill p-2 border-end text-center d-flex align-items-center justify-content-center">
+                                    <input type="number" name="qty_menengah" class="form-control form-control-sm text-center fw-bold text-warning" value="{{ batch.qty_menengah }}" min="0" style="max-width:80px;">
+                                </div>
+                                <div class="flex-fill p-2 border-end text-center d-flex align-items-center justify-content-center">
+                                    <input type="number" name="qty_hampir_rusak" class="form-control form-control-sm text-center fw-bold text-danger" value="{{ batch.qty_hampir_rusak }}" min="0" style="max-width:80px;">
+                                </div>
+                                <div class="flex-fill p-2 border-end text-center d-flex align-items-center justify-content-center">
+                                    <input type="number" name="qty_rusak" class="form-control form-control-sm text-center fw-bold text-secondary" value="{{ batch.qty_rusak }}" min="0" style="max-width:80px;">
+                                </div>
+                                <div class="p-2 d-flex align-items-center justify-content-center" style="width: 70px;">
+                                    <button type="submit" class="btn btn-primary btn-sm rounded-circle shadow-sm" title="Simpan Alokasi" style="width: 36px; height: 36px;">
+                                        <i class="fa-solid fa-save"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </td>
+                    <td class="text-center p-3 border-start">
+                        <div class="d-flex flex-column gap-2 justify-content-center">
+                            <button class="btn btn-sm btn-outline-danger rounded-3"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalKerusakan{{ batch.idDetailPengadaan }}"
+                                    title="Catat Kerusakan (Buang)">
+                                <i class="fa-solid fa-trash-can"></i> Buang
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning rounded-3"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalOlahan{{ batch.idDetailPengadaan }}"
+                                    title="Catat Produk Olahan">
+                                <i class="fa-solid fa-blender"></i> Olah
+                            </button>
+                        </div>
+                    </td>
+                    {% else %}
+                    <td class="text-center text-muted border-end"><del>{{ batch.qty_segar }}</del></td>
+                    <td class="text-center text-muted border-end"><del>{{ batch.qty_menengah }}</del></td>
+                    <td class="text-center text-muted border-end"><del>{{ batch.qty_hampir_rusak }}</del></td>
+                    <td class="text-center text-muted border-end"><del>{{ batch.qty_rusak }}</del></td>
+                    <td class="text-center border-start text-muted">
+                        <span class="badge bg-secondary">Habis</span>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-box-open fs-3 d-block mb-3 text-light"></i>
+                        Belum ada batch pengadaan untuk buah ini.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ===================== MODALS KERUSAKAN & OLAHAN ===================== -->
+{% for item in batch_data %}
+{% with batch=item.batch %}
+{% if batch.status %}
+
+<!-- Modal Catat Kerusakan -->
+<div class="modal fade" id="modalKerusakan{{ batch.idDetailPengadaan }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white rounded-top-4">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-trash-can me-2"></i>Catat Pembuangan — Batch #{{ batch.idDetailPengadaan }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'karyawan_catat_kerusakan' batch.idDetailPengadaan %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger py-2 small rounded-3">
+                        Total sisa stok batch ini: <strong>{{ batch.stok_sisa }} kg</strong>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Sumber Grade</label>
+                        <select name="grade_target" class="form-select form-select-lg" required>
+                            <option value="">-- Pilih Grade --</option>
+                            <option value="qty_segar">Segar (Sisa: {{ batch.qty_segar }} kg)</option>
+                            <option value="qty_menengah">Menengah (Sisa: {{ batch.qty_menengah }} kg)</option>
+                            <option value="qty_hampir_rusak">Hampir Rusak (Sisa: {{ batch.qty_hampir_rusak }} kg)</option>
+                            <option value="qty_rusak">Rusak (Sisa: {{ batch.qty_rusak }} kg)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Jumlah Dibuang (kg)</label>
+                        <input type="number" name="qty_rusak" class="form-control form-control-lg" min="1" max="{{ batch.stok_sisa }}" required
+                               placeholder="Contoh: 5">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Alasan Kerusakan</label>
+                        <select name="alasan" class="form-select form-select-lg" required>
+                            <option value="">-- Pilih Alasan --</option>
+                            <option value="busuk_kadaluarsa">Busuk / Kadaluarsa</option>
+                            <option value="rusak_fisik">Rusak Fisik / Jatuh</option>
+                            <option value="hama">Hama / Ulat</option>
+                            <option value="lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light rounded-bottom-4">
+                    <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger rounded-3 px-4">
+                        <i class="fa-solid fa-check me-2"></i>Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Catat Olahan -->
+<div class="modal fade" id="modalOlahan{{ batch.idDetailPengadaan }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-warning text-white rounded-top-4">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-blender me-2"></i>Catat Olahan — Batch #{{ batch.idDetailPengadaan }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'karyawan_catat_olahan' batch.idDetailPengadaan %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="alert alert-warning py-2 small rounded-3">
+                        Total stok batch: <strong>{{ batch.kuantitas }} kg</strong> (Sistem akan memprioritaskan pengambilan dari <strong>H.Rusak</strong>).
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nama Produk Olahan</label>
+                        <input type="text" name="nama_produk" class="form-control" required placeholder="Contoh: Jus Buah">
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Bahan Dipakai (kg)</label>
+                            <input type="number" name="qty_bahan_dipakai" class="form-control" min="1" max="{{ batch.kuantitas }}" required placeholder="Maks {{ batch.kuantitas }} kg">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Produk Jadi (unit)</label>
+                            <input type="number" name="qty_produk_jadi" class="form-control" min="1" required placeholder="Contoh: 10">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Harga Jual per Unit</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" step="0.01" name="harga_jual_per_unit" class="form-control" min="0" required placeholder="Contoh: 5">
+                            <span class="input-group-text">ribu</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light rounded-bottom-4">
+                    <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-warning text-white rounded-3 px-4">
+                        <i class="fa-solid fa-check me-2"></i>Simpan Olahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endwith %}
+{% endfor %}
+
+{% endblock %}

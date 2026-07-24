@@ -29,14 +29,7 @@
             alt="{{ b.namaBuah }}"
             style="width: 600px; height: 200px; object-fit: cover;"
           />
-          {% if b.diskon_persen > 0 %}
-          <span
-            class="badge bg-danger position-absolute"
-            style="top: 10px; left: 10px;"
-          >
-            Diskon {{ b.diskon_persen }}%
-          </span>
-          {% endif %}
+
         </div>
 
         <div
@@ -52,18 +45,10 @@
 
           <div class="d-flex justify-content-between flex-wrap align-items-center">
             <div>
-              {% if b.diskon_persen > 0 %}
-              <p class="mb-0 text-muted text-decoration-line-through">
-                Rp. {{ b.hargaBuah|intcomma }}
-              </p>
-              <p class="mb-0 text-dark fs-5 fw-bold">
-                Rp. {{ b.harga_setelah_diskon|intcomma }}
-              </p>
-              {% else %}
+
               <p class="text-dark fs-5 fw-bold mb-0">
-                Rp. {{ b.hargaBuah|intcomma }}
+                Rp. {{ b.hargaBuah|intcomma }} / kg
               </p>
-              {% endif %}
             </div>
             <div class="mb-2">
               {% if b.stokBuah > 0 %}
@@ -127,14 +112,7 @@
                       alt="{{ b.namaBuah }}"
                       style="width: 600px; height: 200px; object-fit: cover;"
                     />
-                    {% if b.diskon_persen > 0 %}
-                    <span
-                      class="badge bg-danger position-absolute"
-                      style="top: 10px; left: 10px;"
-                    >
-                      Diskon {{ b.diskon_persen }}%
-                    </span>
-                    {% endif %}
+
                   </div>
                   <div
                     class="text-white bg-secondary px-3 py-1 rounded position-absolute"
@@ -149,18 +127,10 @@
                     <p>{{ b.deskripsiBuah }}</p>
                     <div class="d-flex justify-content-between flex-wrap align-items-center">
                       <div>
-                        {% if b.diskon_persen > 0 %}
-                        <p class="mb-0 text-muted text-decoration-line-through">
-                          Rp. {{ b.hargaBuah|intcomma }}
-                        </p>
-                        <p class="mb-0 text-dark fs-5 fw-bold">
-                          Rp. {{ b.harga_setelah_diskon|intcomma }}
-                        </p>
-                        {% else %}
+
                         <p class="text-dark fs-5 fw-bold mb-0">
-                          Rp. {{ b.hargaBuah|intcomma }}
+                          Rp. {{ b.hargaBuah|intcomma }} / kg
                         </p>
-                        {% endif %}
                       </div>
                       <div class="mb-2">
                         {% if b.stokBuah > 0 %}

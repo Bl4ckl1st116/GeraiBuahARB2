@@ -4,45 +4,33 @@
 {% block title %}Kelola Stok Buah{% endblock %}
 
 {% block content %}
-<div class="row mb-4 align-items-center">
-    <div class="col-12 col-md-6 mb-3 mb-md-0">
-        <h3 class="fw-bold m-0"><i class="fa-solid fa-apple-whole text-success me-2"></i> Daftar Stok Buah</h3>
-        <p class="text-muted m-0 fs-6">Kelola data buah, harga, diskon, dan lama kesegaran di sini.</p>
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold m-0"><i class="fa-solid fa-apple-whole text-success me-2"></i>Daftar Stok Buah</h3>
+        <p class="text-muted m-0 small mt-1">Kelola data buah dan pantau stok per grade kesegaran.</p>
     </div>
-    <div class="col-12 col-md-6 text-md-end">
-        <button type="button" class="btn btn-brand-success btn-lg touch-btn shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahBuah" style="padding: 14px 28px; border-radius: 12px;">
-            <i class="fa-solid fa-plus me-2"></i> Tambah Buah Baru
-        </button>
-    </div>
+    <button type="button" class="btn btn-brand-success touch-btn shadow-sm px-4" data-bs-toggle="modal" data-bs-target="#modalTambahBuah">
+        <i class="fa-solid fa-plus me-2"></i>Tambah Buah
+    </button>
 </div>
 
-<!-- Form Pencarian & Pengaturan Tampilan -->
-<div class="row mb-4 g-2 align-items-center justify-content-between">
-    <!-- Kolom Pencarian -->
-    <div class="col-12 col-md-6">
-        <form method="GET" action="" class="d-flex gap-2">
-            {% if limit %}
-                <input type="hidden" name="limit" value="{{ limit }}">
-            {% endif %}
-            <input type="text" name="q" value="{{ q }}" class="form-control form-control-lg" placeholder="Cari nama buah..." style="border-radius: 10px;">
-            <button type="submit" class="btn btn-brand-success touch-btn px-4 shadow-sm" style="border-radius: 10px;">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
-            {% if q %}
-                <a href="?limit={{ limit }}" class="btn btn-secondary touch-btn px-3 d-flex align-items-center" style="border-radius: 10px;">
-                    <i class="fa-solid fa-arrow-rotate-right"></i>
-                </a>
-            {% endif %}
+<!-- Pencarian & Limit -->
+<div class="row mb-3 g-2 align-items-center">
+    <div class="col-12 col-md-7">
+        <form method="GET" class="d-flex gap-2">
+            <input type="hidden" name="limit" value="{{ limit }}">
+            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cari nama buah...">
+            <button type="submit" class="btn btn-brand-success px-4"><i class="fa-solid fa-search"></i></button>
+            {% if q %}<a href="?limit={{ limit }}" class="btn btn-outline-secondary px-3"><i class="fa-solid fa-xmark"></i></a>{% endif %}
         </form>
     </div>
-    <!-- Kolom Dropdown Limit Tampilan -->
-    <div class="col-12 col-md-3 text-md-end">
-        <form method="GET" action="" class="d-inline-flex align-items-center gap-2">
-            {% if q %}
-                <input type="hidden" name="q" value="{{ q }}">
-            {% endif %}
-            <label for="limit" class="text-nowrap fw-bold text-muted small m-0">Tampilkan:</label>
-            <select name="limit" id="limit" class="form-select" onchange="this.form.submit()" style="border-radius: 8px; width: auto; min-height: 44px;">
+    <div class="col-12 col-md-5 text-md-end">
+        <form method="GET" class="d-inline-flex align-items-center gap-2">
+            {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+            <label class="text-muted small mb-0 text-nowrap">Tampilkan:</label>
+            <select name="limit" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto;">
                 <option value="10" {% if limit == '10' %}selected{% endif %}>10 Baris</option>
                 <option value="20" {% if limit == '20' %}selected{% endif %}>20 Baris</option>
                 <option value="all" {% if limit == 'all' %}selected{% endif %}>Semua</option>
@@ -51,280 +39,277 @@
     </div>
 </div>
 
-<!-- Tabel Buah -->
-<div class="card shadow-sm border-0 rounded-4 p-3">
+<!-- Legenda Grade -->
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <small class="text-muted fw-semibold me-1 align-self-center">Grade:</small>
+    <span class="badge text-bg-success">Segar — dijual normal</span>
+    <span class="badge text-bg-warning">Menengah — prioritas dijual</span>
+    <span class="badge text-bg-danger">Hampir Rusak — olah/buang</span>
+    <span class="badge text-bg-secondary">Rusak — catat rugi</span>
+</div>
+
+<!-- Tabel -->
+<div class="card shadow-sm border-0 rounded-3">
     <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
+        <table class="table table-hover align-middle mb-0" style="min-width: 600px;">
+            <thead class="text-white text-center align-middle" style="background-color: #81C408 !important;">
                 <tr>
-                    <th scope="col" style="width: 10%">Foto</th>
-                    <th scope="col" style="width: 25%">Nama Buah</th>
-                    <th scope="col" style="width: 15%">Harga Asli</th>
-                    <th scope="col" style="width: 10%">Diskon (%)</th>
-                    <th scope="col" style="width: 10%">Masa Segar</th>
-                    <th scope="col" style="width: 10%">Stok (Kg)</th>
-                    <th scope="col" style="width: 20%" class="text-center">Aksi</th>
+                    <th class="ps-3 py-3" style="width:60px; text-align: left;">Foto</th>
+                    <th class="py-3 text-truncate" style="max-width: 150px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Nama Buah</th>
+                    <th class="d-none d-md-table-cell py-3" style="width:110px;">Harga</th>
+                    <th class="d-none d-md-table-cell" style="width:90px;">Masa Segar</th>
+                    <th class="text-center" style="width:60px;" title="Segar">🟢</th>
+                    <th class="text-center" style="width:60px;" title="Menengah">🟠</th>
+                    <th class="text-center" style="width:60px;" title="Hampir Rusak">🔴</th>
+                    <th class="text-center" style="width:60px;" title="Rusak">⚫</th>
+                    <th class="text-center" style="width:100px;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 {% if buah_items %}
                     {% for buah in buah_items %}
-                        <tr>
-                            <td>
-                                {% if buah.fotoBuah %}
-                                    <img src="{{ buah.fotoBuah.url }}" alt="{{ buah.namaBuah }}" class="rounded-3 img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">
-                                {% else %}
-                                    <div class="bg-light text-secondary rounded-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                                        <i class="fa-solid fa-image"></i>
-                                    </div>
-                                {% endif %}
-                            </td>
-                            <td><strong>{{ buah.namaBuah }}</strong></td>
-                            <td>Rp {{ buah.hargaBuah|intcomma }} ribu/kg</td>
-                            <td>
-                                {% if buah.diskon > 0 %}
-                                    <span class="badge bg-danger p-2">Diskon {% widthratio buah.diskon 1 100 %}%</span>
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ buah.lamaKesegaraan }} hari</td>
-                            <td>
-                                {% if buah.stokBuah > 5 %}
-                                    <span class="badge bg-success p-2 fs-6">{{ buah.stokBuah }} kg</span>
-                                {% elif buah.stokBuah > 0 %}
-                                    <span class="badge bg-warning text-dark p-2 fs-6">{{ buah.stokBuah }} kg (Hampir Habis)</span>
-                                {% else %}
-                                    <span class="badge bg-danger p-2 fs-6">Habis (0 kg)</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <div class="d-flex justify-content-center gap-2">
-                                    <!-- Edit Button -->
-                                    <button type="button" class="btn btn-warning text-white touch-btn px-3" data-bs-toggle="modal" data-bs-target="#modalEditBuah{{ buah.idBuah }}" title="Ubah Data">
-                                        <i class="fa-solid fa-pen-to-square"></i> <span class="d-none d-sm-inline ms-1">Ubah</span>
-                                    </button>
-                                    
-                                    <!-- Delete Button -->
-                                    <button type="button" class="btn btn-danger touch-btn px-3" onclick="konfirmasiHapusBuah('{{ buah.idBuah }}', '{{ buah.namaBuah }}')" title="Hapus Data">
-                                        <i class="fa-solid fa-trash"></i> <span class="d-none d-sm-inline ms-1">Hapus</span>
-                                    </button>
-                                    <form id="formHapusBuah{{ buah.idBuah }}" action="{% url 'karyawan_buah_delete' buah.idBuah %}" method="POST" style="display: none;">
-                                        {% csrf_token %}
-                                    </form>
+                    {% with gr=buah.stokPerGrade %}
+                    <tr>
+                        <td class="ps-3">
+                            {% if buah.fotoBuah %}
+                                <img src="{{ buah.fotoBuah.url }}" alt="{{ buah.namaBuah }}"
+                                     class="rounded-2" style="width:40px;height:40px;object-fit:cover;">
+                            {% else %}
+                                <div class="bg-light text-secondary rounded-2 d-flex align-items-center justify-content-center"
+                                     style="width:40px;height:40px;font-size:1rem;">
+                                    <i class="fa-solid fa-image"></i>
                                 </div>
-                            </td>
-                        </tr>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong class="d-block">{{ buah.namaBuah }}</strong>
+                            <small class="text-muted d-block d-md-none">Rp {{ buah.hargaBuah|intcomma }}</small>
+                            <small class="text-muted d-none d-md-block">Total jual: {{ buah.stokBuah }} kg</small>
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                            <span class="fw-semibold">Rp {{ buah.hargaBuah|intcomma }}</span>
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                            <span class="badge bg-light text-dark border">{{ buah.lamaKesegaraan }} hari</span>
+                        </td>
+                        <!-- Kolom Grade (Compact untuk mobile) -->
+                        <td class="text-center px-1">
+                            {% if gr.segar > 0 %}
+                                <span class="badge text-bg-success rounded-pill px-2 py-1">{{ gr.segar }}</span>
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center px-1">
+                            {% if gr.menengah > 0 %}
+                                <span class="badge text-bg-warning rounded-pill px-2 py-1">{{ gr.menengah }}</span>
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center px-1">
+                            {% if gr.hampir_rusak > 0 %}
+                                <span class="badge text-bg-danger rounded-pill px-2 py-1">{{ gr.hampir_rusak }}</span>
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center px-1">
+                            {% if gr.rusak > 0 %}
+                                <span class="badge text-bg-danger rounded-pill px-2 py-1">{{ gr.rusak }}</span>
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center px-1">
+                            <style>
+                                @media (max-width: 768px) {
+                                    .btn-xs-mobile { padding: 0.2rem 0.4rem; font-size: 0.75rem; }
+                                }
+                            </style>
+                            <div class="d-flex justify-content-center gap-1">
+                                <a href="{% url 'karyawan_buah_detail' buah.idBuah %}"
+                                   class="btn btn-sm btn-outline-primary btn-xs-mobile" title="Lihat Detail & Kelola Stok">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-warning btn-xs-mobile"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalEditBuah{{ buah.idBuah }}" title="Ubah Data">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-xs-mobile"
+                                        onclick="konfirmasiHapusBuah('{{ buah.idBuah }}','{{ buah.namaBuah }}')"
+                                        title="Hapus">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                            <form id="formHapusBuah{{ buah.idBuah }}"
+                                      action="{% url 'karyawan_buah_delete' buah.idBuah %}"
+                                      method="POST" class="d-none">{% csrf_token %}</form>
+                        </td>
+                    </tr>
+                    {% endwith %}
 
-                        <!-- MODAL EDIT BUAH -->
-                        <div class="modal fade" id="modalEditBuah{{ buah.idBuah }}" tabindex="-1" aria-labelledby="labelModalEditBuah{{ buah.idBuah }}" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content rounded-4 border-0 shadow-lg">
-                                    <div class="modal-header bg-warning text-white rounded-top-4 py-3">
-                                        <h5 class="modal-title fw-bold" id="labelModalEditBuah{{ buah.idBuah }}"><i class="fa-solid fa-pen-to-square me-2"></i> Ubah Data Buah</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <form action="{% url 'karyawan_buah_update' buah.idBuah %}" method="POST" enctype="multipart/form-data">
-                                        {% csrf_token %}
-                                        <div class="modal-body p-4">
-                                            
-                                            <!-- Nama Buah -->
-                                            <div class="mb-3">
-                                                <label for="editNamaBuah{{ buah.idBuah }}" class="form-label fw-bold">Nama Buah</label>
-                                                <input type="text" class="form-control form-control-lg" id="editNamaBuah{{ buah.idBuah }}" name="namaBuah" value="{{ buah.namaBuah }}" required placeholder="Contoh: Apel Malang">
-                                            </div>
-                                            
-                                            <!-- Harga Buah -->
-                                            <div class="mb-3">
-                                                <label for="editHargaBuah{{ buah.idBuah }}" class="form-label fw-bold">Harga per Kilo (dalam Ribu Rupiah)</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text">Rp</span>
-                                                    <input type="number" step="0.01" class="form-control form-control-lg" id="editHargaBuah{{ buah.idBuah }}" name="hargaBuah" value="{{ buah.hargaBuah }}" required placeholder="Contoh: 25.50 (Artinya Rp 25.500)">
-                                                    <span class="input-group-text">ribu</span>
-                                                </div>
-                                                <small class="text-muted">Gunakan titik (.) untuk desimal/koma. Contoh: 25 untuk Rp 25.000</small>
-                                            </div>
-                                            
-                                            <!-- Diskon -->
-                                            <div class="mb-3">
-                                                <label for="editDiskon{{ buah.idBuah }}" class="form-label fw-bold">Diskon (Persen %)</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control form-control-lg" id="editDiskon{{ buah.idBuah }}" name="diskon" value="{% widthratio buah.diskon 1 100 %}" min="0" max="100" placeholder="0 jika tidak ada diskon">
-                                                    <span class="input-group-text">%</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Masa Segar -->
-                                            <div class="mb-3">
-                                                <label for="editLamaKesegaraan{{ buah.idBuah }}" class="form-label fw-bold">Masa Kesegaran (Hari)</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control form-control-lg" id="editLamaKesegaraan{{ buah.idBuah }}" name="lamaKesegaraan" value="{{ buah.lamaKesegaraan }}" required placeholder="Contoh: 7">
-                                                    <span class="input-group-text">Hari</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Deskripsi -->
-                                            <div class="mb-3">
-                                                <label for="editDeskripsiBuah{{ buah.idBuah }}" class="form-label fw-bold">Deskripsi Buah</label>
-                                                <textarea class="form-control" id="editDeskripsiBuah{{ buah.idBuah }}" name="deskripsiBuah" rows="3" required placeholder="Deskripsikan kondisi atau jenis buah...">{{ buah.deskripsiBuah }}</textarea>
-                                            </div>
-                                            
-                                            <!-- Upload Foto -->
-                                            <div class="mb-3">
-                                                <label for="editFotoBuah{{ buah.idBuah }}" class="form-label fw-bold">Foto Buah Baru (Biarkan kosong jika tidak diganti)</label>
-                                                <input type="file" class="form-control form-control-lg" id="editFotoBuah{{ buah.idBuah }}" name="fotoBuah" accept="image/*">
-                                            </div>
-                                            
-                                        </div>
-                                        <div class="modal-footer bg-light p-3">
-                                            <button type="button" class="btn btn-secondary touch-btn px-4" data-bs-dismiss="modal">Batal</button>
-                                            <button type="submit" class="btn btn-warning text-white touch-btn px-4"><i class="fa-solid fa-save me-1"></i> Simpan Perubahan</button>
-                                        </div>
-                                    </form>
+                    <!-- MODAL EDIT BUAH -->
+                    <div class="modal fade" id="modalEditBuah{{ buah.idBuah }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content rounded-4 border-0 shadow-lg">
+                                <div class="modal-header bg-warning text-white rounded-top-4">
+                                    <h5 class="modal-title fw-bold">
+                                        <i class="fa-solid fa-pen me-2"></i>Ubah Data Buah
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
+                                <form action="{% url 'karyawan_buah_update' buah.idBuah %}" method="POST" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="modal-body p-4">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Nama Buah</label>
+                                            <input type="text" class="form-control" name="namaBuah" value="{{ buah.namaBuah }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Harga per Kilo (ribu Rp)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">Rp</span>
+                                                <input type="number" step="0.01" class="form-control" name="hargaBuah" value="{{ buah.hargaBuah }}" required>
+                                                <span class="input-group-text">ribu</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Masa Kesegaran (Hari)</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" name="lamaKesegaraan" value="{{ buah.lamaKesegaraan }}" required>
+                                                <span class="input-group-text">Hari</span>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Deskripsi</label>
+                                            <textarea class="form-control" name="deskripsiBuah" rows="3" required>{{ buah.deskripsiBuah }}</textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Foto Baru (kosongkan jika tidak diganti)</label>
+                                            <input type="file" class="form-control" name="fotoBuah" accept="image/*">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer bg-light">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                        <button type="submit" class="btn btn-warning text-white">
+                                            <i class="fa-solid fa-save me-1"></i>Simpan
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
+                    </div>
 
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">
+                        <td colspan="9" class="text-center py-5 text-muted">
                             <i class="fa-solid fa-folder-open fs-3 d-block mb-2"></i>
-                            Tidak ada data buah yang tersedia. Silakan klik tombol "Tambah Buah Baru".
+                            Belum ada data buah. Klik "Tambah Buah" untuk mulai.
                         </td>
                     </tr>
                 {% endif %}
             </tbody>
         </table>
     </div>
-    
+
     <!-- Pagination -->
     {% if limit != 'all' and buah_items.has_other_pages %}
-    <nav class="d-flex justify-content-center mt-4">
-        <ul class="pagination shadow-sm">
+    <div class="d-flex justify-content-center py-3">
+        <ul class="pagination mb-0">
             {% if buah_items.has_previous %}
                 <li class="page-item">
-                    <a class="page-link touch-btn text-success" href="?q={{ q }}&limit={{ limit }}&page={{ buah_items.previous_page_number }}">&laquo; Sebelum</a>
-                </li>
-            {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link touch-btn">&laquo; Sebelum</span>
+                    <a class="page-link" href="?q={{ q }}&limit={{ limit }}&page={{ buah_items.previous_page_number }}">&laquo;</a>
                 </li>
             {% endif %}
-            
             {% for num in buah_items.paginator.page_range %}
-                {% if buah_items.number == num %}
-                    <li class="page-item active">
-                        <span class="page-link touch-btn bg-brand-success border-brand-success text-white">{{ num }}</span>
-                    </li>
-                {% else %}
-                    <li class="page-item">
-                        <a class="page-link touch-btn text-success" href="?q={{ q }}&limit={{ limit }}&page={{ num }}">{{ num }}</a>
-                    </li>
-                {% endif %}
+                <li class="page-item {% if buah_items.number == num %}active{% endif %}">
+                    <a class="page-link" href="?q={{ q }}&limit={{ limit }}&page={{ num }}">{{ num }}</a>
+                </li>
             {% endfor %}
-            
             {% if buah_items.has_next %}
                 <li class="page-item">
-                    <a class="page-link touch-btn text-success" href="?q={{ q }}&limit={{ limit }}&page={{ buah_items.next_page_number }}">Berikut &raquo;</a>
-                </li>
-            {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link touch-btn">Berikut &raquo;</span>
+                    <a class="page-link" href="?q={{ q }}&limit={{ limit }}&page={{ buah_items.next_page_number }}">&raquo;</a>
                 </li>
             {% endif %}
         </ul>
-    </nav>
+    </div>
     {% endif %}
 </div>
 
-<!-- MODAL TAMBAH BUAH BARU -->
-<div class="modal fade" id="modalTambahBuah" tabindex="-1" aria-labelledby="labelModalTambahBuah" aria-hidden="true">
+<!-- MODAL TAMBAH BUAH -->
+<div class="modal fade" id="modalTambahBuah" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow-lg">
-            <div class="modal-header bg-brand-success text-white rounded-top-4 py-3">
-                <h5 class="modal-title fw-bold" id="labelModalTambahBuah"><i class="fa-solid fa-plus me-2"></i> Tambah Buah Baru</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-brand-success text-white rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-2"></i>Tambah Buah Baru</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="{% url 'karyawan_buah_create' %}" method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="modal-body p-4">
-                    
-                    <!-- Nama Buah -->
                     <div class="mb-3">
-                        <label for="namaBuah" class="form-label fw-bold">Nama Buah</label>
-                        <input type="text" class="form-control form-control-lg" id="namaBuah" name="namaBuah" required placeholder="Contoh: Apel Malang">
+                        <label class="form-label fw-bold">Nama Buah</label>
+                        <input type="text" class="form-control" name="namaBuah" required placeholder="Contoh: Apel Malang">
                     </div>
-                    
-                    <!-- Harga Buah -->
                     <div class="mb-3">
-                        <label for="hargaBuah" class="form-label fw-bold">Harga per Kilo (dalam Ribu Rupiah)</label>
+                        <label class="form-label fw-bold">Harga per Kilo (ribu Rp)</label>
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="number" step="0.01" class="form-control form-control-lg" id="hargaBuah" name="hargaBuah" required placeholder="Contoh: 25.50 (Artinya Rp 25.500)">
+                            <input type="number" step="0.01" class="form-control" name="hargaBuah" required placeholder="Contoh: 25">
                             <span class="input-group-text">ribu</span>
                         </div>
-                        <small class="text-muted">Gunakan titik (.) untuk desimal/koma. Contoh: 25 untuk Rp 25.000</small>
                     </div>
-                    
-                    <!-- Diskon -->
+
                     <div class="mb-3">
-                        <label for="diskon" class="form-label fw-bold">Diskon (Persen %)</label>
+                        <label class="form-label fw-bold">Masa Kesegaran (Hari)</label>
                         <div class="input-group">
-                            <input type="number" class="form-control form-control-lg" id="diskon" name="diskon" value="0" min="0" max="100" placeholder="0 jika tidak ada diskon">
-                            <span class="input-group-text">%</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Masa Segar -->
-                    <div class="mb-3">
-                        <label for="lamaKesegaraan" class="form-label fw-bold">Masa Kesegaran (Hari)</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control form-control-lg" id="lamaKesegaraan" name="lamaKesegaraan" required placeholder="Contoh: 7">
+                            <input type="number" class="form-control" name="lamaKesegaraan" required placeholder="Contoh: 7">
                             <span class="input-group-text">Hari</span>
                         </div>
                     </div>
-                    
-                    <!-- Deskripsi -->
                     <div class="mb-3">
-                        <label for="deskripsiBuah" class="form-label fw-bold">Deskripsi Buah</label>
-                        <textarea class="form-control" id="deskripsiBuah" name="deskripsiBuah" rows="3" required placeholder="Deskripsikan kondisi atau jenis buah..."></textarea>
+                        <label class="form-label fw-bold">Deskripsi</label>
+                        <textarea class="form-control" name="deskripsiBuah" rows="3" required placeholder="Deskripsikan kondisi atau jenis buah..."></textarea>
                     </div>
-                    
-                    <!-- Upload Foto -->
                     <div class="mb-3">
-                        <label for="fotoBuah" class="form-label fw-bold">Foto Buah</label>
-                        <input type="file" class="form-control form-control-lg" id="fotoBuah" name="fotoBuah" accept="image/*" required>
+                        <label class="form-label fw-bold">Foto Buah</label>
+                        <input type="file" class="form-control" name="fotoBuah" accept="image/*" required>
                     </div>
-                    
                 </div>
-                <div class="modal-footer bg-light p-3">
-                    <button type="button" class="btn btn-secondary touch-btn px-4" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-brand-success touch-btn px-4"><i class="fa-solid fa-circle-check me-1"></i> Simpan Data</button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-brand-success">
+                        <i class="fa-solid fa-circle-check me-1"></i>Simpan
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    function konfirmasiHapusBuah(id, nama) {
-        Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: 'Buah "' + nama + '" akan dihapus secara permanen dari sistem.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                document.getElementById('formHapusBuah' + id).submit();
-            }
-        });
-    }
+function konfirmasiHapusBuah(id, nama) {
+    Swal.fire({
+        title: 'Hapus Buah?',
+        text: '"' + nama + '" akan dihapus permanen.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('formHapusBuah' + id).submit();
+        }
+    });
+}
 </script>
 {% endblock %}

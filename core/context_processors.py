@@ -32,52 +32,45 @@ def kesegaran_alert(request):
     except Exception:
         return default_context
     
-    # Ambil semua batch aktif dengan kuantitas > 0
+    from django.db.models import Q
+    # Ambil semua batch aktif dengan qty_hampir_rusak > 0 atau qty_rusak > 0
     active_batches = DetailPengadaan.objects.filter(
-        status=True,
-        kuantitas__gt=0
+        Q(qty_hampir_rusak__gt=0) | Q(qty_rusak__gt=0),
+        status=True
     ).select_related('idBuah')
     
     today = date.today()
     
-    print("\n" + "="*60)
-    print("🍎 FRUIT FRESHNESS ALERT SYSTEM - BATCH SCAN")
-    print("="*60)
-    
     for batch in active_batches:
-        # Hitung tanggal kadaluarsa
+        # Hitung tanggal kadaluarsa (untuk referensi tampilan)
         exp_date = batch.tanggalMasuk + timedelta(days=batch.idBuah.lamaKesegaraan)
-        
-        # Hitung sisa hari
         sisa_hari = (exp_date - today).days
         
-        # Debugging output
-        print(f"Checking Batch: {batch.idBuah.namaBuah} | "
-              f"Exp: {exp_date.strftime('%Y-%m-%d')} | "
-              f"Sisa: {sisa_hari} Hari | "
-              f"Qty: {batch.kuantitas} kg")
-        
-        # Klasifikasi berdasarkan sisa hari
-        batch_data = {
-            'id': batch.idDetailPengadaan,
-            'nama': batch.idBuah.namaBuah,
-            'sisa_hari': sisa_hari,
-            'kuantitas': batch.kuantitas,
-            'exp_date': exp_date.strftime('%d/%m/%Y'),
-            'tanggal_masuk': batch.tanggalMasuk.strftime('%d/%m/%Y'),
-        }
-        
-        if sisa_hari <= 0:
-            # Kritis: Sudah kadaluarsa atau hari ini
+        if batch.qty_rusak > 0:
+            batch_data = {
+                'id': batch.idDetailPengadaan,
+                'nama': batch.idBuah.namaBuah,
+                'sisa_hari': sisa_hari,
+                'kuantitas': batch.qty_rusak,
+                'exp_date': exp_date.strftime('%d/%m/%Y'),
+                'tanggal_masuk': batch.tanggalMasuk.strftime('%d/%m/%Y'),
+                'grade': 'rusak',
+            }
             kritis_buah.append(batch_data)
             total_alerts += 1
-        elif 1 <= sisa_hari <= 2:
-            # Peringatan: 1-2 hari lagi kadaluarsa
+            
+        if batch.qty_hampir_rusak > 0:
+            batch_data = {
+                'id': batch.idDetailPengadaan,
+                'nama': batch.idBuah.namaBuah,
+                'sisa_hari': sisa_hari,
+                'kuantitas': batch.qty_hampir_rusak,
+                'exp_date': exp_date.strftime('%d/%m/%Y'),
+                'tanggal_masuk': batch.tanggalMasuk.strftime('%d/%m/%Y'),
+                'grade': 'hampir_rusak',
+            }
             peringatan_buah.append(batch_data)
             total_alerts += 1
-    
-    print(f"\n📊 SUMMARY: {len(kritis_buah)} Critical | {len(peringatan_buah)} Warning")
-    print("="*60 + "\n")
     
     # Convert lists to JSON strings for safe JavaScript consumption
     kritis_buah_json = json.dumps(kritis_buah)

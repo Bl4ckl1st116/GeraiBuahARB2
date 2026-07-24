@@ -19,9 +19,10 @@
     
     <style>
         body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f4f6f9;
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f8f9fa;
             color: #333;
+            overflow-x: hidden;
         }
         
         .navbar-brand-karyawan {
@@ -83,8 +84,6 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            white-space: nowrap;
-            flex-shrink: 0;
             text-decoration: none;
         }
 
@@ -119,7 +118,7 @@
         }
 
         /* Responsive spacing changes */
-        @media (max-width: 1199.98px) {
+        @media (max-width: 991.98px) {
             .navbar-collapse {
                 background-color: #fff;
                 padding: 15px;
@@ -143,6 +142,16 @@
                 justify-content: center;
             }
         }
+        
+        @media (min-width: 992px) and (max-width: 1399.98px) {
+            .nav-link-custom {
+                padding: 8px 10px !important;
+                font-size: 0.9rem;
+            }
+            .navbar-nav {
+                flex-wrap: wrap;
+            }
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -150,7 +159,7 @@
 
     {% if request.session.karyawan_id %}
     <!-- Navbar Header -->
-    <nav class="navbar navbar-expand-xl navbar-light bg-white border-bottom py-3 shadow-sm sticky-top">
+    <nav class="navbar navbar-expand-xxl navbar-light bg-white border-bottom py-3 shadow-sm sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'karyawan_dashboard' %}" style="white-space: nowrap;">
                 <i class="fa-solid fa-basket-shopping" style="color: #81C408; font-size: 1.8rem;"></i>
@@ -162,7 +171,7 @@
             </button>
             
             <div class="collapse navbar-collapse" id="karyawanNavbar">
-                <ul class="navbar-nav me-auto mb-2 mb-xl-0 mt-3 mt-xl-0 gap-2 ms-xl-4">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 mt-3 mt-lg-0 gap-2 ms-lg-4" style="flex-wrap: wrap;">
                     <li class="nav-item">
                         <a class="nav-link-custom {% if request.resolver_match.url_name == 'karyawan_dashboard' %}active{% endif %}" href="{% url 'karyawan_dashboard' %}">
                             <i class="fa-solid fa-gauge"></i> Beranda
@@ -183,14 +192,24 @@
                             <i class="fa-solid fa-users"></i> Pelanggan
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link-custom {% if 'olahan' in request.path and not 'penjualan' in request.path %}active{% endif %}" href="{% url 'karyawan_olahan_list' %}">
+                            <i class="fa-solid fa-blender"></i> Kelola Produk Olahan
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link-custom {% if 'penjualan-olahan' in request.path %}active{% endif %}" href="{% url 'karyawan_penjualan_list' %}">
+                            <i class="fa-solid fa-cash-register"></i> Penjualan Olahan
+                        </a>
+                    </li>
                 </ul>
                 
-                <div class="d-flex align-items-center mt-3 mt-xl-0 gap-2 d-flex-mobile-stack">
-                    <span class="text-muted">
+                <div class="d-flex align-items-center mt-3 mt-lg-0 gap-2 d-flex-mobile-stack">
+                    <span class="text-muted text-nowrap">
                         Halo, <strong>{{ request.session.karyawan_nama }}</strong>
                     </span>
-                    <a href="{% url 'karyawan_logout' %}" class="btn btn-outline-danger touch-btn px-4" id="btnLogoutKaryawan">
-                        <i class="fa-solid fa-right-from-bracket me-2"></i> Keluar
+                    <a href="{% url 'karyawan_logout' %}" class="btn btn-outline-danger touch-btn ms-lg-3 px-4" id="btnLogoutKaryawan">
+                        <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Keluar
                     </a>
                 </div>
             </div>

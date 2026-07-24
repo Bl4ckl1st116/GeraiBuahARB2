@@ -1,0 +1,167 @@
+{% extends 'core/karyawan/base.html' %}
+{% load humanize %}
+
+{% block title %}Penjualan Olahan{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-12 col-md-6 mb-3 mb-md-0">
+        <h3 class="fw-bold m-0"><i class="fa-solid fa-cash-register text-success me-2"></i> Penjualan Olahan</h3>
+        <p class="text-muted m-0 fs-6">Catat dan kelola transaksi penjualan produk olahan.</p>
+    </div>
+    <div class="col-12 col-md-6 text-md-end">
+        <button type="button" class="btn btn-brand-success btn-lg touch-btn shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahPenjualan" style="padding: 14px 28px; border-radius: 12px;">
+            <i class="fa-solid fa-cart-plus me-2"></i> Catat Penjualan Baru
+        </button>
+    </div>
+</div>
+
+<!-- Form Pencarian -->
+<div class="row mb-4">
+    <div class="col-12 col-md-6">
+        <form method="GET" action="" class="d-flex gap-2">
+            <input type="text" name="q" value="{{ q }}" class="form-control form-control-lg" placeholder="Cari pelanggan, produk..." style="border-radius: 10px;">
+            <button type="submit" class="btn btn-brand-success touch-btn px-4 shadow-sm" style="border-radius: 10px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            {% if q %}
+            <a href="{% url 'karyawan_penjualan_list' %}" class="btn btn-outline-secondary touch-btn px-4 shadow-sm d-flex align-items-center" style="border-radius: 10px;">
+                <i class="fa-solid fa-xmark"></i>
+            </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Tabel Data -->
+<div class="card shadow-sm border-0 rounded-3">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="min-width: 800px;">
+            <thead class="text-white text-center align-middle" style="background-color: #81C408 !important;">
+                <tr>
+                    <th class="py-3 text-start ps-4">Pelanggan</th>
+                    <th class="py-3">Produk Olahan</th>
+                    <th class="py-3 text-center">Jumlah (Unit)</th>
+                    <th class="py-3 text-end">Total Harga</th>
+                    <th class="py-3 text-center">Tanggal</th>
+                    <th class="py-3 text-center">Dicatat Oleh</th>
+                    <th class="py-3 text-center pe-4">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for jual in penjualan_items %}
+                <tr>
+                    <td class="ps-4 fw-bold text-dark">{{ jual.nama_pelanggan|default:"-" }}</td>
+                    <td>{{ jual.idProdukOlahan.nama_produk }}</td>
+                    <td class="text-center">{{ jual.qty }}</td>
+                    <td class="text-end fw-bold text-success">
+                        Rp {% widthratio jual.qty 1 jual.idProdukOlahan.harga_jual_per_unit as total %}
+                        {{ total|intcomma }}
+                    </td>
+                    <td class="text-center">{{ jual.tanggal|date:"d M Y" }}</td>
+                    <td class="text-center"><span class="badge bg-secondary">{{ jual.pencatat }}</span></td>
+                    <td class="text-center pe-4">
+                        <div class="d-flex justify-content-center gap-2">
+                            <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalEditPenjualan{{ jual.pk }}" title="Edit">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="konfirmasiHapus('formHapusJual{{ jual.pk }}')" title="Hapus">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                            <form id="formHapusJual{{ jual.pk }}" action="{% url 'karyawan_penjualan_delete' jual.pk %}" method="POST" class="d-none">
+                                {% csrf_token %}
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Modal Edit -->
+                <div class="modal fade" id="modalEditPenjualan{{ jual.pk }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4 border-0 shadow-lg">
+                            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                                <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen text-warning me-2"></i> Edit Data Penjualan</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form action="{% url 'karyawan_penjualan_update' jual.pk %}" method="POST">
+                                {% csrf_token %}
+                                <div class="modal-body p-4">
+                                    <div class="alert alert-info py-2 mb-3">
+                                        Produk: <strong>{{ jual.idProdukOlahan.nama_produk }}</strong><br>
+                                        Kuantitas: <strong>{{ jual.qty }} unit</strong>
+                                        <br><small>(Kuantitas tidak bisa diubah langsung demi integritas stok, silakan hapus dan buat ulang jika salah)</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Nama Pelanggan (Opsional)</label>
+                                        <input type="text" name="nama_pelanggan" class="form-control form-control-lg" value="{{ jual.nama_pelanggan|default:'' }}">
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                                    <button type="button" class="btn btn-light btn-lg" data-bs-dismiss="modal">Batal</button>
+                                    <button type="submit" class="btn btn-warning btn-lg fw-bold px-4">Simpan Perubahan</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-folder-open fs-1 mb-3 text-light"></i><br>
+                        Belum ada data penjualan olahan.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Tambah Penjualan -->
+<div class="modal fade" id="modalTambahPenjualan" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus text-success me-2"></i> Catat Penjualan Olahan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'karyawan_penjualan_create' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Pilih Produk Olahan</label>
+                        <select name="idProdukOlahan" class="form-select form-select-lg" required>
+                            <option value="">-- Pilih Produk --</option>
+                            {% for olahan in olahans %}
+                            <option value="{{ olahan.pk }}">{{ olahan.nama_produk }} (Sisa Stok: {{ olahan.qty_produk_jadi }} unit) - Rp {{ olahan.harga_jual_per_unit|intcomma }}/unit</option>
+                            {% empty %}
+                            <option value="" disabled>Belum ada produk olahan dengan sisa stok</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Kuantitas (Unit) Terjual</label>
+                        <input type="number" name="qty" class="form-control form-control-lg" placeholder="Contoh: 2" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nama Pelanggan (Opsional)</label>
+                        <input type="text" name="nama_pelanggan" class="form-control form-control-lg" placeholder="Contoh: Budi">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light btn-lg" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-brand-success btn-lg fw-bold px-4">Simpan Transaksi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function konfirmasiHapus(formId) {
+        if(confirm('Apakah Anda yakin ingin menghapus data penjualan ini? (Stok akan dikembalikan)')) {
+            document.getElementById(formId).submit();
+        }
+    }
+</script>
+{% endblock %}

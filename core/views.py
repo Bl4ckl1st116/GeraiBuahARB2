@@ -78,13 +78,7 @@ def buah(request):
         buah_list = Buah.objects.filter(namaBuah__icontains=query)
     else:
         buah_list = Buah.objects.all()
-    for b in buah_list:
-        if b.diskon:
-            b.harga_setelah_diskon = b.hargaBuah - (b.hargaBuah * b.diskon)
-            b.diskon_persen = int(b.diskon * 100)
-        else:
-            b.harga_setelah_diskon = b.hargaBuah
-            b.diskon_persen = 0
+
     return render(request, 'core/buah.html', {'buah_list': buah_list, 'search_query': query})
 
 
@@ -141,11 +135,8 @@ def keranjang(request):
             if qty <= 0:
                 continue
             harga = buah.hargaBuah
-            if buah.diskon:
-                harga = harga - (harga * buah.diskon)
             subtotal = harga * qty
             total += subtotal
-            diskon_persen = int(buah.diskon * 100) if buah.diskon else 0
 
             # Check stock availability
             stok = buah.stokBuah
@@ -158,9 +149,8 @@ def keranjang(request):
             items.append({
                 'buah': buah,
                 'qty': qty,
-                'harga_setelah_diskon': harga,
+                'harga_asli': harga,
                 'subtotal': subtotal,
-                'diskon_persen': diskon_persen,
                 'stok_habis': stok_habis,
                 'melebihi_stok': melebihi_stok,
                 'stok_tersedia': stok,
@@ -207,11 +197,8 @@ def checkout(request):
         if qty <= 0:
             continue
         harga = buah.hargaBuah
-        if buah.diskon:
-            harga = harga - (harga * buah.diskon)
         subtotal = harga * qty
         total += subtotal
-        diskon_persen = int(buah.diskon * 100) if buah.diskon else 0
 
         # Check stock availability
         stok = buah.stokBuah
@@ -223,9 +210,8 @@ def checkout(request):
         items.append({
             'buah': buah,
             'qty': qty,
-            'harga_setelah_diskon': harga,
+            'harga_asli': harga,
             'subtotal': subtotal,
-            'diskon_persen': diskon_persen,
         })
 
     # Block access to checkout page if stock issues exist
@@ -354,7 +340,7 @@ def preview_laporan(request, tipe):
         'buah': {
             'title': 'Laporan Data Buah',
             'model': Buah,
-            'columns': ['Nama Buah', 'Harga', 'Stok', 'Diskon', 'Kadaluarsa'],
+            'columns': ['Nama Buah', 'Harga', 'Stok', 'Kadaluarsa'],
             'date_field': None,
         },
         'pelanggan': {
@@ -413,7 +399,6 @@ def preview_laporan(request, tipe):
                 obj.namaBuah,
                 f"Rp {intcomma(obj.hargaBuah)}",
                 obj.stokBuah,
-                f"{obj.diskon * 100:.0f}%" if obj.diskon else "0%",
                 obj.tanggalKadaluarsa or "-"
             ])
     elif tipe == 'pelanggan':
@@ -490,7 +475,7 @@ def cetak_laporan_final(request, tipe):
         'buah': {
             'title': 'LAPORAN DATA BUAH',
             'model': Buah,
-            'columns': ['Nama', 'Harga', 'Stok', 'Diskon', 'Kadaluarsa'],
+            'columns': ['Nama', 'Harga', 'Stok', 'Kadaluarsa'],
             'date_field': None,
             'filename': 'laporan_buah.pdf'
         },
@@ -555,7 +540,6 @@ def cetak_laporan_final(request, tipe):
                 obj.namaBuah,
                 f"Rp {intcomma(obj.hargaBuah)}",
                 obj.stokBuah,
-                f"{obj.diskon * 100:.0f}%" if obj.diskon else "0%",
                 obj.tanggalKadaluarsa or "-"
             ])
     elif tipe == 'pelanggan':

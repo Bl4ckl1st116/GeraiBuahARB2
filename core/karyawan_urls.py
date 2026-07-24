@@ -8,6 +8,7 @@ urlpatterns = [
     
     # CRUD Buah
     path('buah/', karyawan_views.buah_list, name='karyawan_buah_list'),
+    path('buah/<int:id_buah>/detail/', karyawan_views.buah_detail, name='karyawan_buah_detail'),
     path('buah/create/', karyawan_views.buah_create, name='karyawan_buah_create'),
     path('buah/update/<int:id_buah>/', karyawan_views.buah_update, name='karyawan_buah_update'),
     path('buah/delete/<int:id_buah>/', karyawan_views.buah_delete, name='karyawan_buah_delete'),
@@ -32,4 +33,21 @@ urlpatterns = [
     # Cetak Struk
     path('pembelian/detail-struk/<int:id_pembelian>/', karyawan_views.get_detail_struk, name='karyawan_detail_struk'),
     path('pembelian/cetak-print/<int:id_pembelian>/', karyawan_views.cetak_struk_print, name='karyawan_cetak_print'),
+
+    # Manajemen Grade Stok, Kerusakan & Olahan
+    path('buah/update-qty/<int:id_detail>/', karyawan_views.update_qty_batch, name='karyawan_update_qty'),
+    path('catat-kerusakan/<int:id_detail>/', karyawan_views.catat_kerusakan, name='karyawan_catat_kerusakan'),
+    path('catat-olahan/<int:id_detail>/', karyawan_views.catat_olahan, name='karyawan_catat_olahan'),
+
+    # CRUD Produk Olahan
+    path('olahan/', karyawan_views.olahan_list, name='karyawan_olahan_list'),
+    path('olahan/create/', karyawan_views.olahan_create, name='karyawan_olahan_create'),
+    path('olahan/update/<int:id_olahan>/', karyawan_views.olahan_update, name='karyawan_olahan_update'),
+    path('olahan/delete/<int:id_olahan>/', karyawan_views.olahan_delete, name='karyawan_olahan_delete'),
+
+    # CRUD Penjualan Olahan
+    path('penjualan-olahan/', karyawan_views.penjualan_list, name='karyawan_penjualan_list'),
+    path('penjualan-olahan/create/', karyawan_views.penjualan_create, name='karyawan_penjualan_create'),
+    path('penjualan-olahan/update/<int:id_penjualan>/', karyawan_views.penjualan_update, name='karyawan_penjualan_update'),
+    path('penjualan-olahan/delete/<int:id_penjualan>/', karyawan_views.penjualan_delete, name='karyawan_penjualan_delete'),
 ]

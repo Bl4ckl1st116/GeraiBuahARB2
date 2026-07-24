@@ -1,8 +1,9 @@
 from django.db import models
 from datetime import timedelta
+from django.core.exceptions import ValidationError
 
 from django.db.models import Sum
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_save, post_delete, pre_save
 from django.dispatch import receiver
 # Create your models here.
 
@@ -31,7 +32,6 @@ class Buah(models.Model):
     hargaBuah = models.DecimalField(max_digits=8, decimal_places=2)  # dalam ribu rupiah
    # stokBuah = models.IntegerField()  # dalam kilogram max_length=4
     deskripsiBuah = models.TextField()
-    diskon = models.DecimalField(max_digits=3, decimal_places=2, default=0)  # dalam persen
     lamaKesegaraan = models.IntegerField()  # dalam hari max_length=2
    # tanggalKadaluarsa = models.DateField(null=True, blank=True)
 
@@ -41,8 +41,18 @@ class Buah(models.Model):
     @property
     def stokBuah(self):
         return sum(
-            detailPengadaan.kuantitas for detailPengadaan in self.detail_pengadaan.filter(status=True)
+            (d.qty_segar + d.qty_menengah) for d in self.detail_pengadaan.filter(status=True)
         )
+
+    @property
+    def stokPerGrade(self):
+        stok = {'segar': 0, 'menengah': 0, 'hampir_rusak': 0, 'rusak': 0}
+        for d in self.detail_pengadaan.filter(status=True):
+            stok['segar'] += d.qty_segar
+            stok['menengah'] += d.qty_menengah
+            stok['hampir_rusak'] += d.qty_hampir_rusak
+            stok['rusak'] += d.qty_rusak
+        return stok
 
     @property
     def tanggalKadaluarsa(self):
@@ -72,8 +82,36 @@ class Pembelian(models.Model):
         ('Dibatalkan', 'Dibatalkan'),
     ]
     statusPembelian = models.CharField(max_length=10, choices=statsBayar, default='Menunggu')
-    buktiBayar = models.ImageField(upload_to='bukti_bayar/')
+    buktiBayar = models.ImageField(upload_to='bukti_bayar/', null=True, blank=True)
     tanggalPembelian = models.DateTimeField(auto_now_add=True)
+
+    # ── Jasa Kirim & Ongkos Kirim ──────────────────────────────────────
+    # Ongkir dibayar cash langsung ke kurir, terpisah dari harga buah ke toko
+    JENIS_KURIR_CHOICES = [
+        ('', 'Tidak Ada / Belum Ditentukan'),
+        ('Grab', 'Grab'),
+        ('Maxim', 'Maxim'),
+        ('GoSend', 'GoSend / Gojek'),
+        ('Lalamove', 'Lalamove'),
+        ('Kurir Sendiri', 'Kurir Sendiri'),
+        ('Ambil Sendiri', 'Ambil Sendiri'),
+        ('Lainnya', 'Lainnya'),
+    ]
+    jasa_kirim = models.CharField(
+        max_length=30, choices=JENIS_KURIR_CHOICES, blank=True, default='',
+        verbose_name='Jasa Kirim'
+    )
+    nama_kurir = models.CharField(
+        max_length=100, blank=True, default='',
+        verbose_name='Nama Kurir',
+        help_text='Opsional: nama pengemudi atau kontak kurir'
+    )
+    ongkos_kirim = models.DecimalField(
+        max_digits=8, decimal_places=2, default=0,
+        verbose_name='Ongkos Kirim',
+        help_text='Dibayar cash langsung ke kurir, terpisah dari harga buah'
+    )
+    # ────────────────────────────────────────────────────────────────────
        
 
     stok_dikembalikan = models.BooleanField(default=False)
@@ -113,10 +151,6 @@ class DetailPembelian(models.Model):
         # Hitung otomatis harga buah x kuantitas
         harga_asli = self.idBuah.hargaBuah
 
-        # Jika ada diskon, terapkan diskon
-        if self.idBuah.diskon:
-            harga_asli = harga_asli - (harga_asli * self.idBuah.diskon)
-
         self.subHarga = harga_asli * self.kuantitas
 
         super().save(*args, **kwargs)
@@ -143,7 +177,7 @@ class Pemasok(models.Model):
 class Pengadaan(models.Model):
     idPengadaan = models.AutoField(primary_key=True)
     idPemasok = models.ForeignKey(Pemasok, on_delete=models.CASCADE)
-    totalHarga = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # dalam ribu rupiah
+    totalHarga = models.DecimalField(max_digits=15, decimal_places=2, default=0, blank=True, null=True)
     
 
     def update_total(self):
@@ -161,30 +195,36 @@ class Pengadaan(models.Model):
 class DetailPengadaan(models.Model):
     idDetailPengadaan = models.AutoField(primary_key=True)
     idPengadaan = models.ForeignKey(Pengadaan, on_delete=models.CASCADE)
-    # idBuah = models.ForeignKey(Buah, on_delete=models.CASCADE)
     idBuah = models.ForeignKey(Buah, on_delete=models.CASCADE, related_name="detail_pengadaan")
-    kuantitas = models.IntegerField()  # max_length=4
-    # tipekuantitass = [
-    #     ('perkilo', 'perkilo'),
-    #     ('perbuah', 'perbuah'),
-    #     ('perbungkus', 'perbungkus'),
-    #     ('perbox', 'perbox'),
-    # ]
-    # tipeKuantitas = models.CharField(max_length=10, choices=tipekuantitass, default='perkilo')
-    subHarga = models.DecimalField(max_digits=9, decimal_places=2)  # dalam ribu rupiah
+    qty_segar = models.IntegerField(default=0)
+    qty_menengah = models.IntegerField(default=0)
+    qty_hampir_rusak = models.IntegerField(default=0)
+    qty_rusak = models.IntegerField(default=0)
+    kuantitas = models.IntegerField(default=0, help_text="Kuantitas total kotor nota")
+    subHarga = models.DecimalField(max_digits=9, decimal_places=2, default=0)  # dalam ribu rupiah
     tanggalMasuk = models.DateField(auto_now_add=True)
-    # statss = [
-    #     ('True', 'True'),
-    #     ('False', 'False'),
-    # ]
-    status = models.BooleanField(default='True')
-    
+    status = models.BooleanField(default=True)
+
+    @property
+    def stok_sisa(self):
+        return self.qty_segar + self.qty_menengah + self.qty_hampir_rusak + self.qty_rusak
+
+    @property
+    def harga_beli_per_kg(self):
+        if self.kuantitas and self.kuantitas > 0:
+            return self.subHarga / self.kuantitas
+        return self.subHarga / self.stok_sisa if self.stok_sisa else 0
+
+    def save(self, *args, **kwargs):
+        # Update subHarga based on total quantity from supplier (kuantitas)
+        self.subHarga = self.idBuah.hargaBuah * self.kuantitas
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name_plural = "Detail Pengadaan"
 
     def __str__(self):
-        return f"Detail Pengadaan {self.idDetailPengadaan} - ID:{self.idPengadaan} - Buah: {self.idBuah.namaBuah} - Kuantitas: {self.kuantitas} kilo - Subtotal: {self.subHarga} ribu"
+        return f"Detail Pengadaan {self.idDetailPengadaan} - ID:{self.idPengadaan} - Buah: {self.idBuah.namaBuah} - Kuantitas Kotor: {self.kuantitas} kg - Sisa: {self.stok_sisa} kg"
     
 @receiver(post_save, sender=DetailPembelian)
 @receiver(post_delete, sender=DetailPembelian)
@@ -194,13 +234,7 @@ def update_total_pembelian(sender, instance, **kwargs):instance.idPembelian.upda
 @receiver(post_delete, sender=DetailPengadaan)
 def update_total_pengadaan(sender, instance, **kwargs):instance.idPengadaan.update_total()
 
-@receiver(post_save, sender=DetailPembelian)
-@receiver(post_delete, sender=DetailPembelian)
-def update_total_pembelian(sender, instance, **kwargs):instance.idPembelian.update_total()
-
-from django.db.models.signals import pre_save, post_save
-from django.dispatch import receiver
-
+# Signal FIFO Penjualan
 @receiver(post_save, sender=DetailPembelian)
 def kurangi_stok_fifo(sender, instance, created, **kwargs):
     if not created:
@@ -215,17 +249,28 @@ def kurangi_stok_fifo(sender, instance, created, **kwargs):
         if qty <= 0:
             break
 
-        if batch.kuantitas >= qty:
-            batch.kuantitas -= qty
-            if batch.kuantitas == 0:
-                batch.status = False
-            batch.save()
-            qty = 0
-        else:
-            qty -= batch.kuantitas
-            batch.kuantitas = 0
+        # Deduct from qty_menengah first
+        if batch.qty_menengah > 0:
+            if batch.qty_menengah >= qty:
+                batch.qty_menengah -= qty
+                qty = 0
+            else:
+                qty -= batch.qty_menengah
+                batch.qty_menengah = 0
+
+        # Then deduct from qty_segar
+        if qty > 0 and batch.qty_segar > 0:
+            if batch.qty_segar >= qty:
+                batch.qty_segar -= qty
+                qty = 0
+            else:
+                qty -= batch.qty_segar
+                batch.qty_segar = 0
+
+        if batch.qty_segar == 0 and batch.qty_menengah == 0 and batch.qty_hampir_rusak == 0 and batch.qty_rusak == 0:
             batch.status = False
-            batch.save()
+            
+        batch.save(update_fields=['qty_segar', 'qty_menengah', 'status'])
 
 
 
@@ -250,13 +295,13 @@ def pembatalan_pembelian(sender, instance, **kwargs):
             buah = d.idBuah
             qty = d.kuantitas
 
-            # kembalikan ke batch terbaru (LIFO)
-            batch = buah.detail_pengadaan.order_by('-tanggalMasuk').first()
+            # kembalikan ke batch terbaru (LIFO) yang aktif
+            batch = buah.detail_pengadaan.filter(status=True).order_by('-tanggalMasuk').first()
 
             if batch:
-                batch.kuantitas += qty
+                batch.qty_segar += qty
                 batch.status = True
-                batch.save()
+                batch.save(update_fields=['qty_segar', 'status'])
 
         instance.stok_dikembalikan = True
 
@@ -290,6 +335,9 @@ class LogAktivitasKaryawan(models.Model):
         ('Buah', 'Buah'),
         ('Pembelian', 'Pembelian'),
         ('Pelanggan', 'Pelanggan'),
+        ('DetailPengadaan', 'DetailPengadaan'),
+        ('CatatanKerusakan', 'CatatanKerusakan'),
+        ('ProdukOlahan', 'ProdukOlahan'),
     ]
     idLog = models.AutoField(primary_key=True)
     idKaryawan = models.ForeignKey(Karyawan, on_delete=models.CASCADE)
@@ -323,3 +371,139 @@ class ProfilToko(models.Model):
     def save(self, *args, **kwargs):
         self.pk = 1
         super().save(*args, **kwargs)
+
+
+class CatatanKerusakan(models.Model):
+    ALASAN_CHOICES = [
+        ('busuk_kadaluarsa', 'Busuk / Kadaluarsa'),
+        ('rusak_fisik', 'Rusak Fisik / Jatuh'),
+        ('hama', 'Hama / Ulat'),
+        ('lainnya', 'Lainnya'),
+    ]
+
+    idKerusakan = models.AutoField(primary_key=True)
+    idDetailPengadaan = models.ForeignKey(
+        DetailPengadaan, on_delete=models.PROTECT,
+        related_name='catatan_kerusakan',
+        verbose_name='Batch Pengadaan'
+    )
+    qty_rusak = models.IntegerField(verbose_name='Jumlah Rusak (kg)')
+    kuantitas_sebelum = models.IntegerField(
+        default=0, verbose_name='Stok Sebelum Dicatat',
+        help_text='Snapshot kuantitas batch sebelum kerusakan dicatat'
+    )
+    alasan = models.CharField(
+        max_length=20, choices=ALASAN_CHOICES,
+        verbose_name='Alasan Kerusakan'
+    )
+    keterangan = models.TextField(
+        blank=True, default='',
+        verbose_name='Keterangan Tambahan'
+    )
+    nilai_kerugian = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name='Nilai Kerugian (ribu Rp)'
+    )
+    tanggalDicatat = models.DateTimeField(auto_now_add=True)
+    idKaryawan = models.ForeignKey(
+        Karyawan, on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name='Dicatat Oleh'
+    )
+
+    class Meta:
+        verbose_name = 'Catatan Kerusakan'
+        verbose_name_plural = 'Catatan Kerusakan'
+        ordering = ['-tanggalDicatat']
+
+    def save(self, *args, **kwargs):
+        batch = self.idDetailPengadaan
+        if not self.pk:
+            self.kuantitas_sebelum = batch.stok_sisa
+            harga_per_kg = batch.harga_beli_per_kg
+            self.nilai_kerugian = self.qty_rusak * harga_per_kg
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Kerusakan #{self.idKerusakan} — {self.idDetailPengadaan.idBuah.namaBuah} {self.qty_rusak} kg"
+
+
+class ProdukOlahan(models.Model):
+    idProdukOlahan = models.AutoField(primary_key=True)
+    idDetailPengadaan = models.ForeignKey(
+        DetailPengadaan, on_delete=models.PROTECT,
+        related_name='produk_olahan',
+        verbose_name='Batch Bahan'
+    )
+    nama_produk = models.CharField(max_length=100, verbose_name='Nama Produk Olahan')
+    qty_bahan_dipakai = models.IntegerField(verbose_name='Bahan Dipakai (kg)')
+    qty_produk_jadi = models.IntegerField(verbose_name='Produk Jadi (unit)')
+    harga_jual_per_unit = models.DecimalField(
+        max_digits=8, decimal_places=2,
+        verbose_name='Harga Jual per Unit (ribu Rp)'
+    )
+    total_pendapatan = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name='Total Pendapatan (ribu Rp)'
+    )
+    tanggal = models.DateField(auto_now_add=True, verbose_name='Tanggal Olah')
+    catatan = models.TextField(blank=True, default='', verbose_name='Catatan')
+    idKaryawan = models.ForeignKey(
+        Karyawan, on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name='Dicatat Oleh'
+    )
+
+    class Meta:
+        verbose_name = 'Produk Olahan'
+        verbose_name_plural = 'Produk Olahan'
+        ordering = ['-tanggal']
+
+    def clean(self):
+        super().clean()
+        if not self.pk:
+            batch = self.idDetailPengadaan
+            if self.qty_bahan_dipakai > batch.qty_hampir_rusak:
+                raise ValidationError({'qty_bahan_dipakai': f"Stok tidak mencukupi! Stok grade hampir rusak hanya {batch.qty_hampir_rusak} kg."})
+
+    def save(self, *args, **kwargs):
+        self.total_pendapatan = self.qty_produk_jadi * self.harga_jual_per_unit
+        if not self.pk:  # Hanya potong saat create
+            batch = self.idDetailPengadaan
+            batch.qty_hampir_rusak -= self.qty_bahan_dipakai
+
+            if batch.stok_sisa == 0:
+                batch.status = False
+            batch.save(update_fields=['qty_hampir_rusak', 'status'])
+        
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Olahan #{self.idProdukOlahan} — {self.nama_produk}"
+
+class PenjualanOlahan(models.Model):
+    idPenjualanOlahan = models.AutoField(primary_key=True)
+    nama_pelanggan = models.CharField(max_length=150, null=True, blank=True, verbose_name="Nama Pelanggan")
+    idProdukOlahan = models.ForeignKey(ProdukOlahan, on_delete=models.CASCADE, verbose_name="Produk Olahan")
+    qty = models.IntegerField(verbose_name="Kuantitas (Unit)")
+    tanggal = models.DateTimeField(auto_now_add=True, verbose_name="Tanggal Penjualan")
+    pencatat = models.CharField(max_length=150, verbose_name="Dicatat Oleh")
+    bukti_pembelian = models.ImageField(upload_to='bukti_olahan/', null=True, blank=True, verbose_name="Bukti Pembayaran")
+
+    def __str__(self):
+        return f"Penjualan #{self.idPenjualanOlahan} - {self.idProdukOlahan.nama_produk}"
+
+    def clean(self):
+        super().clean()
+        if not self.pk:
+            if self.qty > self.idProdukOlahan.qty_produk_jadi:
+                raise ValidationError({'qty': f"Stok produk olahan tidak mencukupi! Sisa stok hanya {self.idProdukOlahan.qty_produk_jadi} unit."})
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            produk = self.idProdukOlahan
+            produk.qty_produk_jadi -= self.qty
+            produk.save(update_fields=['qty_produk_jadi'])
+        super().save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = "Penjualan Olahan"
+        verbose_name_plural = "Penjualan Olahan"

@@ -129,9 +129,30 @@
 
     <table>
         <tr>
-            <td><strong>TOTAL BAYAR:</strong></td>
+            <td><strong>TOTAL BUAH:</strong></td>
             <td class="text-right"><strong>Rp {{ pembelian.totalHargaPembelian|intcomma }} ribu</strong></td>
         </tr>
+        {% if pembelian.ongkos_kirim and pembelian.ongkos_kirim > 0 %}
+        <tr>
+            <td>
+                Ongkos Kirim
+                {% if pembelian.jasa_kirim %}({{ pembelian.jasa_kirim }}){% endif %}:
+            </td>
+            <td class="text-right">Rp {{ pembelian.ongkos_kirim|intcomma }} ribu</td>
+        </tr>
+        {% if pembelian.nama_kurir %}
+        <tr>
+            <td colspan="2" style="font-size: 10px; color: #555;">
+                &nbsp;&nbsp;Kurir: {{ pembelian.nama_kurir }}
+            </td>
+        </tr>
+        {% endif %}
+        <tr>
+            <td colspan="2" style="font-size: 10px; font-style: italic; color: #333; padding-top: 2px;">
+                &nbsp;&nbsp;*Bayar cash ke kurir saat barang tiba
+            </td>
+        </tr>
+        {% endif %}
         <tr>
             <td>Metode:</td>
             <td class="text-right">{{ pembelian.metodeBayar }}</td>
@@ -143,6 +164,7 @@
     <div class="text-center" style="margin-top: 10px; font-size: 10px;">
         {{ profil_toko.footer_pesan|linebreaksbr }}
     </div>
+
 
     <div class="no-print" style="margin-top: 20px; text-align: center;">
         <button onclick="window.print()" style="padding: 5px 15px; cursor: pointer;">Cetak</button>

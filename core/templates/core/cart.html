@@ -50,16 +50,7 @@
               </div>
             </th>
             <td>
-              {% if item.diskon_persen > 0 %}
-              <p class="mb-0 text-decoration-line-through text-muted small">
-                Rp. {{ item.buah.hargaBuah|intcomma }}
-              </p>
-              <p class="mb-0 text-dark">
-                Rp. {{ item.harga_setelah_diskon|intcomma }}
-              </p>
-              {% else %}
               <p class="mb-0">Rp. {{ item.buah.hargaBuah|intcomma }}</p>
-              {% endif %}
             </td>
             <td>
               {% if item.buah.stokBuah > 0 %}

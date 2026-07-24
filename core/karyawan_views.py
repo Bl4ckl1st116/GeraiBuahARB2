@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from .models import (
     Buah, Pelanggan, Pembelian, DetailPembelian,
     Pemasok, Pengadaan, DetailPengadaan, Karyawan, LogAktivitasKaryawan,
-    ProfilToko
+    ProfilToko, CatatanKerusakan, ProdukOlahan, PenjualanOlahan
 )
 
 
@@ -76,12 +76,34 @@ def karyawan_dashboard(request):
     # Log aktivitas terbaru
     logs = LogAktivitasKaryawan.objects.all().order_by('-timestamp')[:10]
 
+    from datetime import date
+    from django.db.models import Sum
+
+    today = date.today()
+    kerugian_bulan_ini = CatatanKerusakan.objects.filter(
+        tanggalDicatat__year=today.year,
+        tanggalDicatat__month=today.month
+    ).aggregate(total=Sum('nilai_kerugian'))['total'] or 0
+
+    pendapatan_olahan = ProdukOlahan.objects.filter(
+        tanggal__year=today.year,
+        tanggal__month=today.month
+    ).aggregate(total=Sum('total_pendapatan'))['total'] or 0
+
+    from django.db.models import Q
+    stok_bermasalah = DetailPengadaan.objects.filter(
+        Q(qty_hampir_rusak__gt=0) | Q(qty_rusak__gt=0), status=True
+    ).count()
+
     context = {
         'karyawan': karyawan,
         'total_buah': total_buah,
         'total_pembelian': total_pembelian,
         'total_pelanggan': total_pelanggan,
         'logs': logs,
+        'kerugian_bulan_ini': kerugian_bulan_ini,
+        'pendapatan_olahan': pendapatan_olahan,
+        'stok_bermasalah': stok_bermasalah,
     }
     return render(request, 'core/karyawan/dashboard.html', context)
 
@@ -116,13 +138,41 @@ def buah_list(request):
     })
 
 
+# ──────────────────────────────────────────────────────────────
+
+
+
+@karyawan_required
+def buah_detail(request, id_buah):
+    """Halaman detail buah: lihat & kelola semua batch per grade."""
+    buah = get_object_or_404(Buah, pk=id_buah)
+    from datetime import date
+
+    batches = buah.detail_pengadaan.all().order_by('status', 'tanggalMasuk')
+
+    batch_data = []
+    for b in batches:
+        hari_berjalan = (date.today() - b.tanggalMasuk).days
+        sisa_hari = buah.lamaKesegaraan - hari_berjalan
+        batch_data.append({
+            'batch': b,
+            'hari_berjalan': hari_berjalan,
+            'sisa_hari': sisa_hari,
+        })
+
+    context = {
+        'buah': buah,
+        'batch_data': batch_data,
+    }
+    return render(request, 'core/karyawan/buah_detail.html', context)
+
+
 @karyawan_required
 def buah_create(request):
     if request.method == 'POST':
         nama = request.POST.get('namaBuah', '').strip()
         harga = request.POST.get('hargaBuah', '').strip()
         deskripsi = request.POST.get('deskripsiBuah', '').strip()
-        diskon = request.POST.get('diskon', '0').strip()
         lama_kesegaran = request.POST.get('lamaKesegaraan', '').strip()
         foto = request.FILES.get('fotoBuah')
 
@@ -131,14 +181,10 @@ def buah_create(request):
             return redirect('karyawan_buah_list')
 
         try:
-            # Konversi persen diskon ke desimal
-            diskon_dec = float(diskon) / 100.0 if float(diskon) > 0 else 0.0
-            
             buah = Buah.objects.create(
                 namaBuah=nama,
                 hargaBuah=float(harga),
                 deskripsiBuah=deskripsi,
-                diskon=diskon_dec,
                 lamaKesegaraan=int(lama_kesegaran),
                 fotoBuah=foto
             )
@@ -424,7 +470,7 @@ def get_detail_struk(request, id_pembelian):
             'harga': float(det.idBuah.hargaBuah),
             'subtotal': float(det.subHarga)
         })
-    
+
     # logo url
     logo_url = ""
     profil_toko, created = ProfilToko.objects.get_or_create(pk=1, defaults={'nama_toko': 'GERAI BUAH ARB'})
@@ -437,7 +483,11 @@ def get_detail_struk(request, id_pembelian):
         'waktu_pembelian': pembelian.tanggalPembelian.strftime('%d-%m-%Y %H:%M'),
         'items': items,
         'total_harga': float(pembelian.totalHargaPembelian),
-        'logo_url': logo_url
+        'logo_url': logo_url,
+        # Data jasa kirim & ongkos kirim
+        'jasa_kirim': pembelian.jasa_kirim or '',
+        'nama_kurir': pembelian.nama_kurir or '',
+        'ongkos_kirim': float(pembelian.ongkos_kirim),
     }
     return JsonResponse(data)
 
@@ -525,32 +575,46 @@ def pembelian_update(request, id_pembelian):
         status = request.POST.get('statusPembelian')
         bukti = request.FILES.get('buktiBayar')
 
+        # Field baru: jasa kirim & ongkos kirim
+        jasa_kirim = request.POST.get('jasa_kirim', '').strip()
+        nama_kurir = request.POST.get('nama_kurir', '').strip()
+        ongkos_kirim_str = request.POST.get('ongkos_kirim', '0').strip()
+
         if not alamat or not status:
             messages.error(request, 'Alamat pengiriman dan Status wajib diisi.')
             return redirect('karyawan_pembelian_list')
 
         try:
+            ongkos_kirim = float(ongkos_kirim_str) if ongkos_kirim_str else 0
+        except ValueError:
+            ongkos_kirim = 0
+
+        try:
             old_status = pembelian.statusPembelian
-            
+
             pembelian.metodeBayar = metode_bayar
             pembelian.alamatPengiriman = alamat
             pembelian.statusPembelian = status
-            
+            pembelian.jasa_kirim = jasa_kirim
+            pembelian.nama_kurir = nama_kurir
+            pembelian.ongkos_kirim = ongkos_kirim
+
             if bukti:
                 pembelian.buktiBayar = bukti
-                
+
             pembelian.save()
 
             # Catat Log
             karyawan = Karyawan.objects.get(pk=request.session['karyawan_id'])
-            
+
             status_desc = f"dari '{old_status}' menjadi '{status}'" if old_status != status else f"status '{status}'"
+            ongkir_desc = f", ongkir {jasa_kirim} Rp {ongkos_kirim}" if ongkos_kirim > 0 else ""
             LogAktivitasKaryawan.objects.create(
                 idKaryawan=karyawan,
                 aksi='UPDATE',
                 target_model='Pembelian',
                 target_id=pembelian.idPembelian,
-                deskripsi=f"Karyawan {karyawan.namaKaryawan} memperbarui data pesanan ID {pembelian.idPembelian} ({status_desc})."
+                deskripsi=f"Karyawan {karyawan.namaKaryawan} memperbarui data pesanan ID {pembelian.idPembelian} ({status_desc}{ongkir_desc})."
             )
             messages.success(request, f"Pesanan ID {pembelian.idPembelian} berhasil diperbarui.")
         except Exception as e:
@@ -706,3 +770,317 @@ def pelanggan_create_cepat(request):
 
     from django.http import HttpResponseNotAllowed
     return HttpResponseNotAllowed(['POST'])
+
+# ======================================================
+# FITUR BARU: MANAJEMEN GRADE, KERUSAKAN, OLAHAN
+# ======================================================
+@karyawan_required
+def update_qty_batch(request, id_detail):
+    if request.method == 'POST':
+        batch = get_object_or_404(DetailPengadaan, pk=id_detail)
+        qty_segar = int(request.POST.get('qty_segar', batch.qty_segar))
+        qty_menengah = int(request.POST.get('qty_menengah', batch.qty_menengah))
+        qty_hampir_rusak = int(request.POST.get('qty_hampir_rusak', batch.qty_hampir_rusak))
+        qty_rusak = int(request.POST.get('qty_rusak', batch.qty_rusak))
+        
+        batch.qty_segar = qty_segar
+        batch.qty_menengah = qty_menengah
+        batch.qty_hampir_rusak = qty_hampir_rusak
+        batch.qty_rusak = qty_rusak
+        
+        if batch.kuantitas == 0:
+            batch.status = False
+        else:
+            batch.status = True
+            
+        batch.save(update_fields=['qty_segar', 'qty_menengah', 'qty_hampir_rusak', 'qty_rusak', 'status'])
+        
+        karyawan = Karyawan.objects.get(pk=request.session['karyawan_id'])
+        LogAktivitasKaryawan.objects.create(
+            idKaryawan=karyawan,
+            aksi='UPDATE',
+            target_model='DetailPengadaan',
+            target_id=batch.pk,
+            deskripsi=f"Mengupdate alokasi qty grade batch ID {batch.pk}."
+        )
+        messages.success(request, f"Alokasi kuantitas batch berhasil diperbarui.")
+    return redirect('karyawan_buah_detail', id_buah=batch.idBuah.idBuah)
+
+@karyawan_required
+def catat_kerusakan(request, id_detail):
+    if request.method == 'POST':
+        batch = get_object_or_404(DetailPengadaan, pk=id_detail)
+        qty_rusak = int(request.POST.get('qty_rusak', 0))
+        alasan = request.POST.get('alasan')
+        grade_target = request.POST.get('grade_target')
+        
+        valid_grades = ['qty_segar', 'qty_menengah', 'qty_hampir_rusak', 'qty_rusak']
+        
+        if grade_target in valid_grades:
+            stok_grade = getattr(batch, grade_target)
+            if 0 < qty_rusak <= stok_grade:
+                karyawan = Karyawan.objects.get(pk=request.session['karyawan_id'])
+                kerusakan = CatatanKerusakan.objects.create(
+                    idDetailPengadaan=batch,
+                    qty_rusak=qty_rusak,
+                    alasan=alasan,
+                    idKaryawan=karyawan
+                )
+                
+                # Kurangi stok berdasarkan grade_target
+                setattr(batch, grade_target, stok_grade - qty_rusak)
+                if batch.stok_sisa == 0:
+                    batch.status = False
+                batch.save(update_fields=[grade_target, 'status'])
+                
+                LogAktivitasKaryawan.objects.create(
+                    idKaryawan=karyawan,
+                    aksi='CREATE',
+                    target_model='CatatanKerusakan',
+                    target_id=kerusakan.pk,
+                    deskripsi=f"Mencatat kerusakan {qty_rusak}kg buah {batch.idBuah.namaBuah} dari {grade_target} (alasan: {alasan})."
+                )
+                messages.success(request, f"Kerusakan {qty_rusak}kg berhasil dicatat dari grade yang dipilih.")
+            else:
+                messages.error(request, "Jumlah tidak valid atau melebihi stok grade yang dipilih.")
+        else:
+            messages.error(request, "Silakan pilih sumber grade yang valid.")
+    return redirect('karyawan_buah_list')
+
+@karyawan_required
+def catat_olahan(request, id_detail):
+    if request.method == 'POST':
+        batch = get_object_or_404(DetailPengadaan, pk=id_detail)
+        nama_produk = request.POST.get('nama_produk')
+        qty_bahan_dipakai = int(request.POST.get('qty_bahan_dipakai', 0))
+        qty_produk_jadi = int(request.POST.get('qty_produk_jadi', 0))
+        harga_jual_per_unit = request.POST.get('harga_jual_per_unit', 0)
+        
+        if 0 < qty_bahan_dipakai <= batch.kuantitas and qty_produk_jadi > 0:
+            from datetime import date
+            karyawan = Karyawan.objects.get(pk=request.session['karyawan_id'])
+            olahan = ProdukOlahan.objects.create(
+                idDetailPengadaan=batch,
+                nama_produk=nama_produk,
+                qty_bahan_dipakai=qty_bahan_dipakai,
+                qty_produk_jadi=qty_produk_jadi,
+                harga_jual_per_unit=harga_jual_per_unit,
+                tanggal=date.today(),
+                idKaryawan=karyawan
+            )
+            LogAktivitasKaryawan.objects.create(
+                idKaryawan=karyawan,
+                aksi='CREATE',
+                target_model='ProdukOlahan',
+                target_id=olahan.pk,
+                deskripsi=f"Mencatat olahan '{nama_produk}' menggunakan {qty_bahan_dipakai}kg {batch.idBuah.namaBuah}."
+            )
+            messages.success(request, f"Produk olahan '{nama_produk}' berhasil dicatat.")
+        else:
+            messages.error(request, "Input tidak valid, pastikan stok bahan mencukupi.")
+    return redirect('karyawan_buah_list')
+
+# ======================================================
+# CRUD PRODUK OLAHAN
+# ======================================================
+@karyawan_required
+def olahan_list(request):
+    q = request.GET.get('q', '').strip()
+    
+    olahan_items = ProdukOlahan.objects.select_related('idDetailPengadaan__idBuah').order_by('-tanggal')
+    if q:
+        olahan_items = olahan_items.filter(Q(nama_produk__icontains=q) | Q(idDetailPengadaan__idBuah__namaBuah__icontains=q))
+        
+    batches = DetailPengadaan.objects.filter(status=True, qty_hampir_rusak__gt=0).select_related('idBuah')
+        
+    context = {
+        'olahan_items': olahan_items,
+        'q': q,
+        'batches': batches,
+    }
+    return render(request, 'core/karyawan/olahan_list.html', context)
+
+@karyawan_required
+def olahan_create(request):
+    if request.method == 'POST':
+        try:
+            id_detail = request.POST.get('idDetailPengadaan')
+            batch = get_object_or_404(DetailPengadaan, pk=id_detail)
+            nama_produk = request.POST.get('nama_produk')
+            qty_bahan = int(request.POST.get('qty_bahan_dipakai', 0))
+            qty_hasil = int(request.POST.get('qty_produk_jadi', 0))
+            harga_jual = int(request.POST.get('harga_jual_per_unit', 0))
+            
+            olahan = ProdukOlahan.objects.create(
+                idDetailPengadaan=batch,
+                nama_produk=nama_produk,
+                qty_bahan_dipakai=qty_bahan,
+                qty_produk_jadi=qty_hasil,
+                harga_jual_per_unit=harga_jual
+            )
+            
+            karyawan = Karyawan.objects.get(pk=request.session['karyawan_id'])
+            LogAktivitasKaryawan.objects.create(
+                idKaryawan=karyawan,
+                aksi='CREATE',
+                target_model='ProdukOlahan',
+                target_id=olahan.pk,
+                deskripsi=f"Menambahkan produk olahan {nama_produk} ({qty_hasil} unit)."
+            )
+            messages.success(request, f"Produk Olahan {nama_produk} berhasil ditambahkan.")
+        except ValidationError as e:
+            messages.error(request, str(e.message_dict if hasattr(e, 'message_dict') else e))
+        except Exception as e:
+            messages.error(request, f"Gagal menambahkan: {str(e)}")
+            
+    return redirect('karyawan_olahan_list')
+
+@karyawan_required
+def olahan_update(request, id_olahan):
+    olahan = get_object_or_404(ProdukOlahan, pk=id_olahan)
+    if request.method == 'POST':
+        try:
+            olahan.nama_produk = request.POST.get('nama_produk')
+            # qty_bahan_dipakai usually shouldn't be edited easily because it affects stock deduction. We'll skip editing bahan qty for simplicity/safety unless necessary, but let's allow qty_produk_jadi and harga.
+            olahan.qty_produk_jadi = int(request.POST.get('qty_produk_jadi', olahan.qty_produk_jadi))
+            olahan.harga_jual_per_unit = int(request.POST.get('harga_jual_per_unit', olahan.harga_jual_per_unit))
+            olahan.save()
+            
+            karyawan = Karyawan.objects.get(pk=request.session['karyawan_id'])
+            LogAktivitasKaryawan.objects.create(
+                idKaryawan=karyawan,
+                aksi='UPDATE',
+                target_model='ProdukOlahan',
+                target_id=olahan.pk,
+                deskripsi=f"Mengubah data produk olahan {olahan.nama_produk}."
+            )
+            messages.success(request, f"Produk Olahan {olahan.nama_produk} berhasil diperbarui.")
+        except Exception as e:
+            messages.error(request, f"Gagal memperbarui: {str(e)}")
+            
+    return redirect('karyawan_olahan_list')
+
+@karyawan_required
+def olahan_delete(request, id_olahan):
+    olahan = get_object_or_404(ProdukOlahan, pk=id_olahan)
+    if request.method == 'POST':
+        nama = olahan.nama_produk
+        
+        # Restore stock logic if needed, but standard django delete on ProdukOlahan doesn't restore stock unless programmed. Let's just delete.
+        olahan.delete()
+        
+        karyawan = Karyawan.objects.get(pk=request.session['karyawan_id'])
+        LogAktivitasKaryawan.objects.create(
+            idKaryawan=karyawan,
+            aksi='DELETE',
+            target_model='ProdukOlahan',
+            target_id=id_olahan,
+            deskripsi=f"Menghapus produk olahan {nama}."
+        )
+        messages.success(request, f"Produk Olahan {nama} berhasil dihapus.")
+    return redirect('karyawan_olahan_list')
+
+
+# ======================================================
+# CRUD PENJUALAN OLAHAN
+# ======================================================
+@karyawan_required
+def penjualan_list(request):
+    q = request.GET.get('q', '').strip()
+    
+    penjualan_items = PenjualanOlahan.objects.select_related('idProdukOlahan').order_by('-tanggal')
+    if q:
+        penjualan_items = penjualan_items.filter(Q(nama_pelanggan__icontains=q) | Q(idProdukOlahan__nama_produk__icontains=q) | Q(pencatat__icontains=q))
+        
+    olahans = ProdukOlahan.objects.filter(qty_produk_jadi__gt=0)
+        
+    context = {
+        'penjualan_items': penjualan_items,
+        'q': q,
+        'olahans': olahans,
+    }
+    return render(request, 'core/karyawan/penjualan_list.html', context)
+
+@karyawan_required
+def penjualan_create(request):
+    if request.method == 'POST':
+        try:
+            id_olahan = request.POST.get('idProdukOlahan')
+            olahan = get_object_or_404(ProdukOlahan, pk=id_olahan)
+            nama_pelanggan = request.POST.get('nama_pelanggan', '')
+            qty = int(request.POST.get('qty', 0))
+            
+            # The model's clean() method will handle validation (stok tak mencukupi)
+            # The model's save() method will handle deducting stok
+            penjualan = PenjualanOlahan(
+                idProdukOlahan=olahan,
+                nama_pelanggan=nama_pelanggan,
+                qty=qty,
+                pencatat=request.session.get('karyawan_nama', 'Sistem')
+            )
+            penjualan.full_clean()
+            penjualan.save()
+            
+            karyawan = Karyawan.objects.get(pk=request.session['karyawan_id'])
+            LogAktivitasKaryawan.objects.create(
+                idKaryawan=karyawan,
+                aksi='CREATE',
+                target_model='PenjualanOlahan',
+                target_id=penjualan.pk,
+                deskripsi=f"Mencatat penjualan {qty} unit {olahan.nama_produk} ke {nama_pelanggan}."
+            )
+            messages.success(request, f"Penjualan {olahan.nama_produk} berhasil dicatat.")
+        except ValidationError as e:
+            # e is a ValidationError dict or list
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Gagal mencatat penjualan: {str(e)}")
+            
+    return redirect('karyawan_penjualan_list')
+
+@karyawan_required
+def penjualan_update(request, id_penjualan):
+    penjualan = get_object_or_404(PenjualanOlahan, pk=id_penjualan)
+    if request.method == 'POST':
+        try:
+            penjualan.nama_pelanggan = request.POST.get('nama_pelanggan', penjualan.nama_pelanggan)
+            # Not updating qty directly via Karyawan UI to avoid complex restock math unless necessary.
+            penjualan.save(update_fields=['nama_pelanggan'])
+            
+            karyawan = Karyawan.objects.get(pk=request.session['karyawan_id'])
+            LogAktivitasKaryawan.objects.create(
+                idKaryawan=karyawan,
+                aksi='UPDATE',
+                target_model='PenjualanOlahan',
+                target_id=penjualan.pk,
+                deskripsi=f"Mengubah data penjualan #{penjualan.pk}."
+            )
+            messages.success(request, f"Data penjualan berhasil diperbarui.")
+        except Exception as e:
+            messages.error(request, f"Gagal memperbarui: {str(e)}")
+            
+    return redirect('karyawan_penjualan_list')
+
+@karyawan_required
+def penjualan_delete(request, id_penjualan):
+    penjualan = get_object_or_404(PenjualanOlahan, pk=id_penjualan)
+    if request.method == 'POST':
+        
+        # Restore stock of olahan
+        olahan = penjualan.idProdukOlahan
+        olahan.qty_produk_jadi += penjualan.qty
+        olahan.save(update_fields=['qty_produk_jadi'])
+        
+        penjualan.delete()
+        
+        karyawan = Karyawan.objects.get(pk=request.session['karyawan_id'])
+        LogAktivitasKaryawan.objects.create(
+            idKaryawan=karyawan,
+            aksi='DELETE',
+            target_model='PenjualanOlahan',
+            target_id=id_penjualan,
+            deskripsi=f"Menghapus penjualan #{id_penjualan}."
+        )
+        messages.success(request, f"Penjualan berhasil dihapus dan stok dikembalikan.")
+    return redirect('karyawan_penjualan_list')
+

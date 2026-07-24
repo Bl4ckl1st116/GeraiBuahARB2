@@ -60,6 +60,25 @@
     </div>
 </div>
 
+<!-- Statistik Stok Bermasalah -->
+<div class="row g-3 mb-4 justify-content-center text-center">
+    <div class="col-12 col-md-4">
+        <div class="card card-stat py-3 border-0 shadow-sm" style="background: linear-gradient(135deg, #fffbf0, #ffedc0);">
+            <div class="card-body">
+                <div class="mb-2" style="font-size: 2.5rem; color: #fd7e14;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h5 class="fw-normal mb-1" style="color: #fd7e14;">Stok Bermasalah</h5>
+                <h2 class="fw-bold m-0" style="color: #fd7e14;">{{ stok_bermasalah }} batch</h2>
+                <small class="text-muted">grade hampir rusak / rusak — perlu tindakan</small>
+                <div class="mt-2">
+                    <a href="{% url 'karyawan_buah_list' %}" class="btn btn-sm btn-outline-warning">Lihat Stok</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Menu Navigasi Cepat (Tombol Sentuh Besar) -->
 <div class="row g-3 mb-5">
     <div class="col-12"><h4 class="fw-bold mb-2">Pilih Pekerjaan Anda:</h4></div>

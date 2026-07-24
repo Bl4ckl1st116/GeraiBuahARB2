@@ -1,0 +1,181 @@
+{% extends 'core/karyawan/base.html' %}
+{% load humanize %}
+
+{% block title %}Kelola Produk Olahan{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-12 col-md-6 mb-3 mb-md-0">
+        <h3 class="fw-bold m-0"><i class="fa-solid fa-blender text-success me-2"></i> Produk Olahan</h3>
+        <p class="text-muted m-0 fs-6">Kelola data produk olahan dari stok buah Hampir Rusak.</p>
+    </div>
+    <div class="col-12 col-md-6 text-md-end">
+        <button type="button" class="btn btn-brand-success btn-lg touch-btn shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahOlahan" style="padding: 14px 28px; border-radius: 12px;">
+            <i class="fa-solid fa-plus me-2"></i> Buat Produk Olahan Baru
+        </button>
+    </div>
+</div>
+
+<!-- Form Pencarian -->
+<div class="row mb-4">
+    <div class="col-12 col-md-6">
+        <form method="GET" action="" class="d-flex gap-2">
+            <input type="text" name="q" value="{{ q }}" class="form-control form-control-lg" placeholder="Cari nama produk atau bahan buah..." style="border-radius: 10px;">
+            <button type="submit" class="btn btn-brand-success touch-btn px-4 shadow-sm" style="border-radius: 10px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            {% if q %}
+            <a href="{% url 'karyawan_olahan_list' %}" class="btn btn-outline-secondary touch-btn px-4 shadow-sm d-flex align-items-center" style="border-radius: 10px;">
+                <i class="fa-solid fa-xmark"></i>
+            </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Tabel Data -->
+<div class="card shadow-sm border-0 rounded-3">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="min-width: 800px;">
+            <thead class="text-white text-center align-middle" style="background-color: #81C408 !important;">
+                <tr>
+                    <th class="py-3 text-start ps-4">Nama Produk</th>
+                    <th class="py-3">Batch Bahan Baku</th>
+                    <th class="py-3 text-center">Bahan Dipakai</th>
+                    <th class="py-3 text-center">Stok Hasil (Unit)</th>
+                    <th class="py-3 text-end">Harga Jual / Unit</th>
+                    <th class="py-3 text-center">Tanggal</th>
+                    <th class="py-3 text-center pe-4">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for olahan in olahan_items %}
+                <tr>
+                    <td class="ps-4 fw-bold text-dark">{{ olahan.nama_produk }}</td>
+                    <td>{{ olahan.idDetailPengadaan.idBuah.namaBuah }} ({{ olahan.idDetailPengadaan.tanggalMasuk|date:"d M Y" }})</td>
+                    <td class="text-center">{{ olahan.qty_bahan_dipakai }} kg</td>
+                    <td class="text-center">
+                        {% if olahan.qty_produk_jadi > 0 %}
+                        <span class="badge bg-success rounded-pill px-3">{{ olahan.qty_produk_jadi }}</span>
+                        {% else %}
+                        <span class="badge bg-danger rounded-pill px-3">Habis</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end fw-bold text-success">Rp {{ olahan.harga_jual_per_unit|intcomma }}</td>
+                    <td class="text-center">{{ olahan.tanggal|date:"d M Y" }}</td>
+                    <td class="text-center pe-4">
+                        <div class="d-flex justify-content-center gap-2">
+                            <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalEditOlahan{{ olahan.pk }}" title="Edit">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="konfirmasiHapus('formHapus{{ olahan.pk }}')" title="Hapus">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                            <form id="formHapus{{ olahan.pk }}" action="{% url 'karyawan_olahan_delete' olahan.pk %}" method="POST" class="d-none">
+                                {% csrf_token %}
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Modal Edit -->
+                <div class="modal fade" id="modalEditOlahan{{ olahan.pk }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4 border-0 shadow-lg">
+                            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                                <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen text-warning me-2"></i> Edit Produk Olahan</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form action="{% url 'karyawan_olahan_update' olahan.pk %}" method="POST">
+                                {% csrf_token %}
+                                <div class="modal-body p-4">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Nama Produk</label>
+                                        <input type="text" name="nama_produk" class="form-control form-control-lg" value="{{ olahan.nama_produk }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Stok Hasil (Unit)</label>
+                                        <input type="number" name="qty_produk_jadi" class="form-control form-control-lg" value="{{ olahan.qty_produk_jadi }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Harga Jual / Unit</label>
+                                        <input type="number" name="harga_jual_per_unit" class="form-control form-control-lg" value="{{ olahan.harga_jual_per_unit|stringformat:"d" }}" required>
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                                    <button type="button" class="btn btn-light btn-lg" data-bs-dismiss="modal">Batal</button>
+                                    <button type="submit" class="btn btn-warning btn-lg fw-bold px-4">Simpan Perubahan</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-folder-open fs-1 mb-3 text-light"></i><br>
+                        Belum ada data produk olahan.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Tambah Olahan -->
+<div class="modal fade" id="modalTambahOlahan" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus text-success me-2"></i> Buat Produk Olahan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'karyawan_olahan_create' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Sumber Batch (Stok Hampir Rusak > 0)</label>
+                        <select name="idDetailPengadaan" class="form-select form-select-lg" required>
+                            <option value="">-- Pilih Batch Buah --</option>
+                            {% for batch in batches %}
+                            <option value="{{ batch.pk }}">{{ batch.idBuah.namaBuah }} ({{ batch.tanggalMasuk|date:"d M Y" }}) - Stok HR: {{ batch.qty_hampir_rusak }} kg</option>
+                            {% empty %}
+                            <option value="" disabled>Tidak ada batch dengan stok Hampir Rusak</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nama Produk</label>
+                        <input type="text" name="nama_produk" class="form-control form-control-lg" placeholder="Contoh: Jus Apel Malang" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Bahan Dipakai (kg)</label>
+                        <input type="number" name="qty_bahan_dipakai" class="form-control form-control-lg" placeholder="Contoh: 2" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Stok Hasil (Unit)</label>
+                        <input type="number" name="qty_produk_jadi" class="form-control form-control-lg" placeholder="Contoh: 10" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Harga Jual / Unit</label>
+                        <input type="number" name="harga_jual_per_unit" class="form-control form-control-lg" placeholder="Contoh: 15000" min="0" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light btn-lg" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-brand-success btn-lg fw-bold px-4">Simpan Olahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function konfirmasiHapus(formId) {
+        if(confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+            document.getElementById(formId).submit();
+        }
+    }
+</script>
+{% endblock %}
