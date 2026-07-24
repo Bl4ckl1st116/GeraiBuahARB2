@@ -167,7 +167,7 @@
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#karyawanNavbar" aria-controls="karyawanNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
+                <span class="navbar-toggler-icon position-relative"> {% if badge_pesanan_baru > 0 %}<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>{% endif %} </span>
             </button>
             
             <div class="collapse navbar-collapse" id="karyawanNavbar">
@@ -184,7 +184,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link-custom {% if 'pembelian' in request.path %}active{% endif %}" href="{% url 'karyawan_pembelian_list' %}">
-                            <i class="fa-solid fa-cart-shopping"></i> Pesanan Masuk
+                            <i class="fa-solid fa-cart-shopping"></i> Pesanan Masuk {% if badge_pesanan_baru > 0 %}<span class="badge bg-danger ms-2 rounded-pill">{{ badge_pesanan_baru }}</span>{% endif %}
                         </a>
                     </li>
                     <li class="nav-item">

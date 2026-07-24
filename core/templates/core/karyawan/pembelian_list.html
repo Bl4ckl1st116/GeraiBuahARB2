@@ -285,7 +285,7 @@
                                                 <label for="editOngkosKirim{{ item.idPembelian }}" class="form-label fw-bold">Ongkos Kirim (ribu rupiah)</label>
                                                 <div class="input-group input-group-lg">
                                                     <span class="input-group-text">Rp</span>
-                                                    <input type="number" class="form-control" id="editOngkosKirim{{ item.idPembelian }}" name="ongkos_kirim" value="{{ item.ongkos_kirim }}" min="0" step="0.01" placeholder="0">
+                                                    <input type="number" class="form-control" id="editOngkosKirim{{ item.idPembelian }}" name="ongkos_kirim" value="{{ item.ongkos_kirim|stringformat:'.0f'|default:'0' }}" min="0" step="0.01" placeholder="0">
                                                     <span class="input-group-text">ribu</span>
                                                 </div>
                                                 <small class="text-muted">Kosongkan atau isi 0 jika tidak ada ongkos kirim.</small>

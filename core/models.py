@@ -216,8 +216,6 @@ class DetailPengadaan(models.Model):
         return self.subHarga / self.stok_sisa if self.stok_sisa else 0
 
     def save(self, *args, **kwargs):
-        # Update subHarga based on total quantity from supplier (kuantitas)
-        self.subHarga = self.idBuah.hargaBuah * self.kuantitas
         super().save(*args, **kwargs)
 
     class Meta:

@@ -576,18 +576,13 @@ def pembelian_update(request, id_pembelian):
         bukti = request.FILES.get('buktiBayar')
 
         # Field baru: jasa kirim & ongkos kirim
-        jasa_kirim = request.POST.get('jasa_kirim', '').strip()
-        nama_kurir = request.POST.get('nama_kurir', '').strip()
-        ongkos_kirim_str = request.POST.get('ongkos_kirim', '0').strip()
+        jasa_kirim = request.POST.get('jasa_kirim')
+        nama_kurir = request.POST.get('nama_kurir')
+        ongkos_kirim_str = request.POST.get('ongkos_kirim', '').replace(',', '.')
 
         if not alamat or not status:
             messages.error(request, 'Alamat pengiriman dan Status wajib diisi.')
             return redirect('karyawan_pembelian_list')
-
-        try:
-            ongkos_kirim = float(ongkos_kirim_str) if ongkos_kirim_str else 0
-        except ValueError:
-            ongkos_kirim = 0
 
         try:
             old_status = pembelian.statusPembelian
@@ -595,9 +590,16 @@ def pembelian_update(request, id_pembelian):
             pembelian.metodeBayar = metode_bayar
             pembelian.alamatPengiriman = alamat
             pembelian.statusPembelian = status
-            pembelian.jasa_kirim = jasa_kirim
-            pembelian.nama_kurir = nama_kurir
-            pembelian.ongkos_kirim = ongkos_kirim
+            
+            if jasa_kirim:
+                pembelian.jasa_kirim = jasa_kirim.strip()
+            if nama_kurir:
+                pembelian.nama_kurir = nama_kurir.strip()
+            if ongkos_kirim_str and ongkos_kirim_str.strip() != '':
+                try:
+                    pembelian.ongkos_kirim = float(ongkos_kirim_str.strip())
+                except ValueError:
+                    pass
 
             if bukti:
                 pembelian.buktiBayar = bukti
@@ -608,7 +610,7 @@ def pembelian_update(request, id_pembelian):
             karyawan = Karyawan.objects.get(pk=request.session['karyawan_id'])
 
             status_desc = f"dari '{old_status}' menjadi '{status}'" if old_status != status else f"status '{status}'"
-            ongkir_desc = f", ongkir {jasa_kirim} Rp {ongkos_kirim}" if ongkos_kirim > 0 else ""
+            ongkir_desc = f", ongkir {pembelian.jasa_kirim} Rp {pembelian.ongkos_kirim}" if pembelian.ongkos_kirim > 0 else ""
             LogAktivitasKaryawan.objects.create(
                 idKaryawan=karyawan,
                 aksi='UPDATE',
@@ -911,13 +913,15 @@ def olahan_create(request):
             qty_hasil = int(request.POST.get('qty_produk_jadi', 0))
             harga_jual = int(request.POST.get('harga_jual_per_unit', 0))
             
-            olahan = ProdukOlahan.objects.create(
+            olahan = ProdukOlahan(
                 idDetailPengadaan=batch,
                 nama_produk=nama_produk,
                 qty_bahan_dipakai=qty_bahan,
                 qty_produk_jadi=qty_hasil,
                 harga_jual_per_unit=harga_jual
             )
+            olahan.full_clean()
+            olahan.save()
             
             karyawan = Karyawan.objects.get(pk=request.session['karyawan_id'])
             LogAktivitasKaryawan.objects.create(

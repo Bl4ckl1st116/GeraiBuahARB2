@@ -83,3 +83,14 @@ def kesegaran_alert(request):
         'peringatan_buah_json': peringatan_buah_json,  # JSON string for JavaScript
         'total_alerts': total_alerts,
     }
+
+from .models import Pembelian
+
+def global_karyawan_alerts(request):
+    """
+    Menyediakan context global untuk indikator notifikasi di portal karyawan.
+    """
+    badge_pesanan_baru = Pembelian.objects.filter(statusPembelian='Menunggu').count()
+    return {
+        'badge_pesanan_baru': badge_pesanan_baru
+    }
