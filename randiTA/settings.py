@@ -170,12 +170,6 @@ JAZZMIN_SETTINGS = {
     ],
 
      "icons": {
-        # "auth": "fas fa-users-cog",
-        # "auth.user": "fas fa-user",
-        # "auth.Group": "fas fa-users",
-        "Core.Mahasiswa": "fas fa-user-graduate",
-        "Core.Dosen": "fas fa-chalkboard-teacher",
-        "Core.JadwalUjian": "fas fa-calendar-alt",
         "core.Buah": "fa-solid fa-apple-whole",    # Posisi 1
         "core.Pelanggan": "fa-solid fa-user-group",     # Posisi 2
         "core.Pembelian": "fa-solid fa-cart-shopping",     # Posisi 3
@@ -183,6 +177,12 @@ JAZZMIN_SETTINGS = {
         "core.Pemasok": "fa-solid fa-address-book",   # Posisi 5
         "core.Pengadaan": "fa-solid fa-truck",     # Posisi 6
         "core.DetailPengadaan": "fa-solid fa-truck",     # Posisi 7
+        "core.ProdukOlahan": "fa-solid fa-blender",
+        "core.PenjualanOlahan": "fa-solid fa-cash-register",
+        "core.CatatanKerusakan": "fa-solid fa-clipboard-list",
+        "core.Karyawan":"fa-solid fa-users",
+        "core.LogAktivitasKaryawan":"fa-solid fa-list-check",
+        "core.ProfilToko":"fa-solid fa-store",
     },
     "show_ui_builder":"True",
 }

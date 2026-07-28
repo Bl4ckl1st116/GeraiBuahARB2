@@ -69,15 +69,18 @@ def logout_pelanggan(request):
     return redirect('index')
 
 def index(request):
-    bestseller_list = Buah.objects.order_by('-idBuah')[:4]
+    bestseller_list = sorted(Buah.objects.all(), key=lambda b: b.stokBuah, reverse=True)[:4]
     return render(request, 'core/home.html', {'bestseller_list': bestseller_list})
 
 def buah(request):
     query = request.GET.get('q', '').strip()
     if query:
-        buah_list = Buah.objects.filter(namaBuah__icontains=query)
+        buah_qs = Buah.objects.filter(namaBuah__icontains=query)
     else:
-        buah_list = Buah.objects.all()
+        buah_qs = Buah.objects.all()
+
+    # Urutkan menggunakan Python: stok terbesar/tersedia di atas, stok 0 di bawah
+    buah_list = sorted(buah_qs, key=lambda b: b.stokBuah, reverse=True)
 
     return render(request, 'core/buah.html', {'buah_list': buah_list, 'search_query': query})
 
